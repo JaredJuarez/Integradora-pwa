@@ -1,17 +1,19 @@
 // components.js - Componentes reutilizables
 
 // Header con navegación
-function createHeader(title = 'Dashboard', showMenuBtn = true) {
-    const user = getCurrentUser();
-    if (!user) return '';
-    
-    return `
+function createHeader(title = "Dashboard", showMenuBtn = true) {
+  const user = getCurrentUser();
+  if (!user) return "";
+
+  return `
         <header class="bg-white shadow-sm sticky top-0 z-40">
             <div class="px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16">
                     <!-- Left side -->
                     <div class="flex items-center">
-                        ${showMenuBtn ? `
+                        ${
+                          showMenuBtn
+                            ? `
                             <button 
                                 id="menu-btn" 
                                 onclick="toggleSidebar()" 
@@ -19,7 +21,9 @@ function createHeader(title = 'Dashboard', showMenuBtn = true) {
                             >
                                 <i class="fas fa-bars text-xl"></i>
                             </button>
-                        ` : ''}
+                        `
+                            : ""
+                        }
                         <h1 class="text-xl sm:text-2xl font-bold text-gray-900">${title}</h1>
                     </div>
 
@@ -67,10 +71,16 @@ function createHeader(title = 'Dashboard', showMenuBtn = true) {
                             </button>
                             <div id="userDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
                                 <div class="px-4 py-3 border-b">
-                                    <p id="userName" class="text-sm font-medium text-gray-900">${user.nombre}</p>
-                                    <p id="userEmail" class="text-xs text-gray-500">${user.email}</p>
+                                    <p id="userName" class="text-sm font-medium text-gray-900">${
+                                      user.nombre
+                                    }</p>
+                                    <p id="userEmail" class="text-xs text-gray-500">${
+                                      user.email
+                                    }</p>
                                     <p class="text-xs text-gray-400 mt-1">
-                                        <span id="userRole" class="badge badge-primary">${Format.capitalize(user.rol)}</span>
+                                        <span id="userRole" class="badge badge-primary">${Format.capitalize(
+                                          user.rol
+                                        )}</span>
                                     </p>
                                 </div>
                                 <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
@@ -94,10 +104,10 @@ function createHeader(title = 'Dashboard', showMenuBtn = true) {
 
 // Sidebar para administrador
 function createAdminSidebar() {
-    const currentPath = window.location.pathname;
-    const isActive = (path) => currentPath.includes(path) ? 'bg-gray-700' : '';
-    
-    return `
+  const currentPath = window.location.pathname;
+  const isActive = (path) => (currentPath.includes(path) ? "bg-gray-700" : "");
+
+  return `
         <aside id="sidebar" class="sidebar bg-gray-800 text-white w-64 min-h-screen flex flex-col">
             <div class="p-6">
                 <div class="flex items-center space-x-3">
@@ -107,32 +117,44 @@ function createAdminSidebar() {
             </div>
             
             <nav class="flex-1 px-4 space-y-2">
-                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('dashboard')}">
+                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "dashboard"
+                )}">
                     <i class="fas fa-home w-6"></i>
                     <span class="ml-3">Dashboard</span>
                 </a>
                 
-                <a href="usuarios-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('usuarios')}">
+                <a href="usuarios-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "usuarios"
+                )}">
                     <i class="fas fa-users w-6"></i>
                     <span class="ml-3">Usuarios</span>
                 </a>
                 
-                <a href="productos-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('productos')}">
+                <a href="productos-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "productos"
+                )}">
                     <i class="fas fa-box w-6"></i>
                     <span class="ml-3">Productos</span>
                 </a>
                 
-                <a href="empleados-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('empleados')}">
+                <a href="empleados-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "empleados"
+                )}">
                     <i class="fas fa-briefcase w-6"></i>
                     <span class="ml-3">Empleados</span>
                 </a>
                 
-                <a href="reportes.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('reportes')}">
+                <a href="reportes.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "reportes"
+                )}">
                     <i class="fas fa-chart-bar w-6"></i>
                     <span class="ml-3">Reportes</span>
                 </a>
                 
-                <a href="configuracion.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('configuracion')}">
+                <a href="configuracion.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "configuracion"
+                )}">
                     <i class="fas fa-cog w-6"></i>
                     <span class="ml-3">Configuración</span>
                 </a>
@@ -150,10 +172,10 @@ function createAdminSidebar() {
 
 // Sidebar para cliente
 function createClienteSidebar() {
-    const currentPath = window.location.pathname;
-    const isActive = (path) => currentPath.includes(path) ? 'bg-blue-700' : '';
-    
-    return `
+  const currentPath = window.location.pathname;
+  const isActive = (path) => (currentPath.includes(path) ? "bg-blue-700" : "");
+
+  return `
         <aside id="sidebar" class="sidebar bg-blue-800 text-white w-64 min-h-screen flex flex-col">
             <div class="p-6">
                 <div class="flex items-center space-x-3">
@@ -163,33 +185,45 @@ function createClienteSidebar() {
             </div>
             
             <nav class="flex-1 px-4 space-y-2">
-                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive('dashboard')}">
+                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive(
+                  "dashboard"
+                )}">
                     <i class="fas fa-home w-6"></i>
                     <span class="ml-3">Inicio</span>
                 </a>
                 
-                <a href="productos.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive('productos')}">
+                <a href="productos.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive(
+                  "productos"
+                )}">
                     <i class="fas fa-shopping-bag w-6"></i>
                     <span class="ml-3">Productos</span>
                 </a>
                 
-                <a href="carrito.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive('carrito')}">
+                <a href="carrito.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive(
+                  "carrito"
+                )}">
                     <i class="fas fa-shopping-cart w-6"></i>
                     <span class="ml-3">Carrito</span>
                     <span id="cartBadge" class="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
                 </a>
                 
-                <a href="historial-pedidos.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive('historial')}">
+                <a href="historial-pedidos.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive(
+                  "historial"
+                )}">
                     <i class="fas fa-history w-6"></i>
                     <span class="ml-3">Mis Pedidos</span>
                 </a>
                 
-                <a href="favoritos.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive('favoritos')}">
+                <a href="favoritos.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive(
+                  "favoritos"
+                )}">
                     <i class="fas fa-heart w-6"></i>
                     <span class="ml-3">Favoritos</span>
                 </a>
                 
-                <a href="perfil.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive('perfil')}">
+                <a href="perfil.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-blue-700 transition ${isActive(
+                  "perfil"
+                )}">
                     <i class="fas fa-user w-6"></i>
                     <span class="ml-3">Mi Perfil</span>
                 </a>
@@ -207,10 +241,10 @@ function createClienteSidebar() {
 
 // Sidebar para empleado
 function createEmpleadoSidebar() {
-    const currentPath = window.location.pathname;
-    const isActive = (path) => currentPath.includes(path) ? 'bg-green-700' : '';
-    
-    return `
+  const currentPath = window.location.pathname;
+  const isActive = (path) => (currentPath.includes(path) ? "bg-green-700" : "");
+
+  return `
         <aside id="sidebar" class="sidebar bg-green-800 text-white w-64 min-h-screen flex flex-col">
             <div class="p-6">
                 <div class="flex items-center space-x-3">
@@ -220,27 +254,37 @@ function createEmpleadoSidebar() {
             </div>
             
             <nav class="flex-1 px-4 space-y-2">
-                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive('dashboard')}">
+                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive(
+                  "dashboard"
+                )}">
                     <i class="fas fa-home w-6"></i>
                     <span class="ml-3">Dashboard</span>
                 </a>
                 
-                <a href="inventario.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive('inventario')}">
+                <a href="inventario.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive(
+                  "inventario"
+                )}">
                     <i class="fas fa-boxes w-6"></i>
                     <span class="ml-3">Inventario</span>
                 </a>
                 
-                <a href="ventas.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive('ventas')}">
+                <a href="ventas.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive(
+                  "ventas"
+                )}">
                     <i class="fas fa-cash-register w-6"></i>
                     <span class="ml-3">Ventas</span>
                 </a>
                 
-                <a href="atencion-cliente.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive('atencion')}">
+                <a href="atencion-cliente.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive(
+                  "atencion"
+                )}">
                     <i class="fas fa-headset w-6"></i>
                     <span class="ml-3">Atención Cliente</span>
                 </a>
                 
-                <a href="reportes-ventas.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive('reportes')}">
+                <a href="reportes-ventas.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-green-700 transition ${isActive(
+                  "reportes"
+                )}">
                     <i class="fas fa-chart-line w-6"></i>
                     <span class="ml-3">Reportes</span>
                 </a>
@@ -258,48 +302,60 @@ function createEmpleadoSidebar() {
 
 // Toggle notifications dropdown
 function toggleNotifications() {
-    const dropdown = document.getElementById('notificationsDropdown');
-    const userDropdown = document.getElementById('userDropdown');
-    
-    if (dropdown) {
-        dropdown.classList.toggle('hidden');
-        if (userDropdown) userDropdown.classList.add('hidden');
-    }
+  const dropdown = document.getElementById("notificationsDropdown");
+  const userDropdown = document.getElementById("userDropdown");
+
+  if (dropdown) {
+    dropdown.classList.toggle("hidden");
+    if (userDropdown) userDropdown.classList.add("hidden");
+  }
 }
 
 // Toggle user menu dropdown
 function toggleUserMenu() {
-    const dropdown = document.getElementById('userDropdown');
-    const notificationsDropdown = document.getElementById('notificationsDropdown');
-    
-    if (dropdown) {
-        dropdown.classList.toggle('hidden');
-        if (notificationsDropdown) notificationsDropdown.classList.add('hidden');
-    }
+  const dropdown = document.getElementById("userDropdown");
+  const notificationsDropdown = document.getElementById(
+    "notificationsDropdown"
+  );
+
+  if (dropdown) {
+    dropdown.classList.toggle("hidden");
+    if (notificationsDropdown) notificationsDropdown.classList.add("hidden");
+  }
 }
 
 // Cerrar dropdowns al hacer clic fuera
-document.addEventListener('click', (e) => {
-    const userDropdown = document.getElementById('userDropdown');
-    const notificationsDropdown = document.getElementById('notificationsDropdown');
-    
-    if (userDropdown && !e.target.closest('[onclick="toggleUserMenu()"]') && !userDropdown.contains(e.target)) {
-        userDropdown.classList.add('hidden');
-    }
-    
-    if (notificationsDropdown && !e.target.closest('[onclick="toggleNotifications()"]') && !notificationsDropdown.contains(e.target)) {
-        notificationsDropdown.classList.add('hidden');
-    }
+document.addEventListener("click", (e) => {
+  const userDropdown = document.getElementById("userDropdown");
+  const notificationsDropdown = document.getElementById(
+    "notificationsDropdown"
+  );
+
+  if (
+    userDropdown &&
+    !e.target.closest('[onclick="toggleUserMenu()"]') &&
+    !userDropdown.contains(e.target)
+  ) {
+    userDropdown.classList.add("hidden");
+  }
+
+  if (
+    notificationsDropdown &&
+    !e.target.closest('[onclick="toggleNotifications()"]') &&
+    !notificationsDropdown.contains(e.target)
+  ) {
+    notificationsDropdown.classList.add("hidden");
+  }
 });
 
 // Actualizar contador del carrito
 function updateCartBadge() {
-    const cartBadge = document.getElementById('cartBadge');
-    if (cartBadge) {
-        const cart = Storage.get('cart') || [];
-        const totalItems = cart.reduce((sum, item) => sum + item.cantidad, 0);
-        cartBadge.textContent = totalItems;
-    }
+  const cartBadge = document.getElementById("cartBadge");
+  if (cartBadge) {
+    const cart = Storage.get("cart") || [];
+    const totalItems = cart.reduce((sum, item) => sum + item.cantidad, 0);
+    cartBadge.textContent = totalItems;
+  }
 }
 
 // Exportar componentes
