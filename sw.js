@@ -3,24 +3,24 @@ const CACHE_NAME = "pwa-sistema-empleados-v1.0.0";
 
 // URLs que se cachearán automáticamente al instalar el Service Worker
 const urlsToCache = [
-  "./",
-  "./index.html",
-  "./pages/auth/login.html",
-  "./pages/auth/registro.html",
-  "./pages/empleado/dashboard.html",
-  "./pages/empleado/qr-scanner.html",
-  "./pages/empleado/productos-visita.html",
-  "./pages/empleado/camara-estante.html",
-  "./pages/admin/dashboard.html",
-  "./pages/admin/productos-management.html",
-  "./assets/css/styles.css",
-  "./assets/js/app.js",
-  "./assets/js/auth.js",
-  "./assets/js/data.js",
-  "./assets/js/utils.js",
-  "./assets/js/employee-data.js",
-  "./components/components.js",
-  "./manifest.json",
+  "/Integradora-pwa/",
+  "/Integradora-pwa/index.html",
+  "/Integradora-pwa/pages/auth/login.html",
+  "/Integradora-pwa/pages/auth/registro.html",
+  "/Integradora-pwa/pages/empleado/dashboard.html",
+  "/Integradora-pwa/pages/empleado/qr-scanner.html",
+  "/Integradora-pwa/pages/empleado/productos-visita.html",
+  "/Integradora-pwa/pages/empleado/camara-estante.html",
+  "/Integradora-pwa/pages/admin/dashboard.html",
+  "/Integradora-pwa/pages/admin/productos-management.html",
+  "/Integradora-pwa/assets/css/styles.css",
+  "/Integradora-pwa/assets/js/app.js",
+  "/Integradora-pwa/assets/js/auth.js",
+  "/Integradora-pwa/assets/js/data.js",
+  "/Integradora-pwa/assets/js/utils.js",
+  "/Integradora-pwa/assets/js/employee-data.js",
+  "/Integradora-pwa/components/components.js",
+  "/Integradora-pwa/manifest.json",
   // CDN resources
   "https://cdn.tailwindcss.com",
   "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css",
@@ -138,7 +138,7 @@ self.addEventListener("fetch", (event) => {
 
           // Si es una página HTML y estamos offline, mostrar página de fallback
           if (event.request.headers.get("accept").includes("text/html")) {
-            return caches.match("./index.html");
+            return caches.match("/Integradora-pwa/index.html");
           }
 
           throw error;
@@ -210,11 +210,11 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
   if (event.action === "explore") {
-    event.waitUntil(clients.openWindow("./"));
+    event.waitUntil(clients.openWindow("/Integradora-pwa/"));
   } else if (event.action === "close") {
     // No hacer nada, solo cerrar
   } else {
-    event.waitUntil(clients.openWindow("./"));
+    event.waitUntil(clients.openWindow("/Integradora-pwa/"));
   }
 });
 

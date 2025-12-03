@@ -2,8 +2,8 @@
   "name": "PWA Sistema de Gestión de Empleados",
   "short_name": "PWA Empleados",
   "description": "Sistema de gestión de rutas para empleados - Progressive Web App",
-  "start_url": "/Integradora-pwa/",
-  "scope": "/Integradora-pwa/",
+  "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#667eea",
   "theme_color": "#4F46E5",
@@ -35,7 +35,7 @@
       "name": "Iniciar Sesión",
       "short_name": "Login",
       "description": "Acceso rápido al inicio de sesión",
-      "url": "/Integradora-pwa/pages/auth/login.html",
+      "url": "./pages/auth/login.html",
       "icons": [
         {
           "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iMjAiIGZpbGw9IiM0RjQ2RTUiLz4KPHN2ZyB4PSIyNCIgeT0iMjQiIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Im0xOSAxNS02LTZMMiAyMGg5bDQtNXoiLz4KPC9wYXRoPgo8L3N2Zz4KPC9zdmc+",
@@ -48,7 +48,7 @@
       "name": "Dashboard Empleado",
       "short_name": "Empleado",
       "description": "Panel de empleado con rutas",
-      "url": "/Integradora-pwa/pages/empleado/dashboard.html",
+      "url": "./pages/empleado/dashboard.html",
       "icons": [
         {
           "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iOTYiIGhlaWdodD0iOTYiIHZpZXdCb3g9IjAgMCA5NiA5NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9Ijk2IiBoZWlnaHQ9Ijk2IiByeD0iMjAiIGZpbGw9IiMyMmM1NWUiLz4KPHN2ZyB4PSIyNCIgeT0iMjQiIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJ3aGl0ZSI+CjxwYXRoIGQ9Im0xOSAxNS02LTZMMiAyMGg5bDQtNXoiLz4KPC9wYXRoPgo8L3N2Zz4KPC9zdmc+",
