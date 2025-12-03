@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Escanear Código QR - Empleado</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="manifest" href="../../manifest.json" />
+    <link rel="stylesheet" href="../../assets/css/styles.css" />
+
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .camera-container {
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 20px;
+        overflow: hidden;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+      }
+
+      .qr-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200px;
+        height: 200px;
+        border: 2px solid #fff;
+        border-radius: 12px;
+        box-shadow: 0 0 0 99999px rgba(0, 0, 0, 0.3);
+      }
+
+      .qr-corner {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #4ade80;
+      }
+
+      .qr-corner.top-left {
+        top: -3px;
+        left: -3px;
+        border-right: none;
+        border-bottom: none;
+      }
+
+      .qr-corner.top-right {
+        top: -3px;
+        right: -3px;
+        border-left: none;
+        border-bottom: none;
+      }
+
+      .qr-corner.bottom-left {
+        bottom: -3px;
+        left: -3px;
+        border-right: none;
+        border-top: none;
+      }
+
+      .qr-corner.bottom-right {
+        bottom: -3px;
+        right: -3px;
+        border-left: none;
+        border-top: none;
+      }
+
+      .scanning-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #4ade80, transparent);
+        animation: scanning 2s linear infinite;
+      }
+
+      @keyframes scanning {
+        0% {
+          transform: translateY(0);
+        }
+        100% {
+          transform: translateY(200px);
+        }
+      }
+
+      .mobile-header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header Móvil -->
+    <div class="mobile-header sticky top-0 z-50">
+      <div class="max-w-md mx-auto px-4 py-3">
+        <div class="flex items-center space-x-3">
+          <button
+            onclick="volverAtras()"
+            class="p-2 text-gray-600 hover:text-blue-500"
+          >
+            <i class="fas fa-arrow-left text-xl"></i>
+          </button>
+          <div>
+            <h1 class="text-lg font-bold text-gray-800">Escanear QR</h1>
+            <p class="text-sm text-gray-600" id="nombreTienda">
+              Verificar llegada a tienda
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="max-w-md mx-auto px-4 py-6">
+      <!-- Información de la tienda -->
+      <div
+        id="infoTienda"
+        class="bg-white bg-opacity-90 rounded-lg p-4 mb-6 shadow-lg"
+      >
+        <div class="text-center">
+          <div
+            class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3"
+          >
+            <i class="fas fa-store text-white text-lg"></i>
+          </div>
+          <h2 class="font-bold text-lg text-gray-800 mb-1" id="tiendaNombre">
+            Cargando...
+          </h2>
+          <p class="text-gray-600 text-sm" id="tiendaDireccion">
+            Cargando dirección...
+          </p>
+        </div>
+      </div>
+
+      <!-- Instrucciones -->
+      <div class="bg-white bg-opacity-90 rounded-lg p-4 mb-6 shadow-lg">
+        <div class="flex items-start space-x-3">
+          <div
+            class="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center flex-shrink-0"
+          >
+            <i class="fas fa-info text-white text-sm"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-800 mb-1">Instrucciones</h3>
+            <p class="text-sm text-gray-600">
+              Busca el código QR en la entrada de la tienda y colócalo dentro
+              del marco para escanearlo.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cámara/QR Scanner -->
+      <div class="camera-container relative mb-6 aspect-square">
+        <!-- Simulación de video/cámara -->
+        <div
+          id="videoContainer"
+          class="w-full h-full bg-gray-900 flex items-center justify-center relative"
+        >
+          <div class="text-white text-center">
+            <i class="fas fa-camera text-4xl mb-3 opacity-50"></i>
+            <p class="text-sm opacity-75">Cámara iniciando...</p>
+          </div>
+
+          <!-- Overlay del marco QR -->
+          <div class="qr-overlay">
+            <div class="qr-corner top-left"></div>
+            <div class="qr-corner top-right"></div>
+            <div class="qr-corner bottom-left"></div>
+            <div class="qr-corner bottom-right"></div>
+            <div class="scanning-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado del escáner -->
+      <div
+        id="scannerStatus"
+        class="bg-white bg-opacity-90 rounded-lg p-4 mb-6 shadow-lg"
+      >
+        <div class="flex items-center space-x-3">
+          <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+          <span class="text-gray-800 font-medium">Buscando código QR...</span>
+        </div>
+      </div>
+
+      <!-- Botón de simulación para desarrollo -->
+      <div class="space-y-3">
+        <button
+          onclick="simularEscaneoExitoso()"
+          class="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-medium shadow-lg"
+        >
+          <i class="fas fa-qrcode mr-2"></i>Simular Escaneo Exitoso
+        </button>
+
+        <button
+          onclick="simularEscaneoError()"
+          class="w-full bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium shadow-lg"
+        >
+          <i class="fas fa-times mr-2"></i>Simular QR Incorrecto
+        </button>
+      </div>
+
+      <!-- Modal de éxito -->
+      <div
+        id="modalExito"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden"
+      >
+        <div class="flex items-center justify-center min-h-screen p-4">
+          <div class="bg-white rounded-lg max-w-sm w-full p-6">
+            <div class="text-center">
+              <div
+                class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
+              >
+                <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+              </div>
+              <h3 class="text-lg font-bold text-gray-800 mb-2">
+                ¡QR Verificado!
+              </h3>
+              <p class="text-gray-600 mb-6">
+                Código QR correcto. Puedes continuar con la visita a la tienda.
+              </p>
+              <button
+                onclick="continuarAProductos()"
+                class="w-full btn-primary py-3 rounded-lg font-medium"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal de error -->
+      <div
+        id="modalError"
+        class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden"
+      >
+        <div class="flex items-center justify-center min-h-screen p-4">
+          <div class="bg-white rounded-lg max-w-sm w-full p-6">
+            <div class="text-center">
+              <div
+                class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"
+              >
+                <i class="fas fa-times-circle text-red-500 text-2xl"></i>
+              </div>
+              <h3 class="text-lg font-bold text-gray-800 mb-2">
+                Código QR Incorrecto
+              </h3>
+              <p class="text-gray-600 mb-6">
+                Este QR no corresponde a la tienda asignada. Verifica que estés
+                en el lugar correcto.
+              </p>
+              <button
+                onclick="cerrarModalError()"
+                class="w-full btn-secondary py-3 rounded-lg font-medium"
+              >
+                Intentar de nuevo
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/app.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/employee-data.js"></script>
+
+    <script>
+      // Proteger página solo para empleados
+      protectPage("empleado");
+
+      let tiendaActual;
+      let empleadoActual;
+
+      function initQRScanner() {
+        empleadoActual = getCurrentUser();
+        const tiendaId = sessionStorage.getItem("tiendaAVisitar");
+
+        if (!tiendaId) {
+          alert("No se ha seleccionado ninguna tienda");
+          window.location.href = "./dashboard.html";
+          return;
+        }
+
+        // Obtener información de la tienda
+        const tiendas = getTiendasAsignadasEmpleado(empleadoActual.id);
+        tiendaActual = tiendas.find((t) => t.id === tiendaId);
+
+        if (!tiendaActual) {
+          alert("Tienda no encontrada");
+          window.location.href = "./dashboard.html";
+          return;
+        }
+
+        // Actualizar información en la UI
+        document.getElementById("nombreTienda").textContent =
+          tiendaActual.nombre;
+        document.getElementById("tiendaNombre").textContent =
+          tiendaActual.nombre;
+        document.getElementById("tiendaDireccion").textContent =
+          tiendaActual.direccion;
+
+        // Simular inicialización de cámara
+        setTimeout(() => {
+          document.getElementById("videoContainer").innerHTML = `
+            <div class="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center relative">
+              <div class="text-white text-center">
+                <i class="fas fa-video text-3xl mb-2 opacity-75"></i>
+                <p class="text-xs opacity-50">Vista de cámara activa</p>
+              </div>
+              
+              <!-- Overlay del marco QR -->
+              <div class="qr-overlay">
+                <div class="qr-corner top-left"></div>
+                <div class="qr-corner top-right"></div>
+                <div class="qr-corner bottom-left"></div>
+                <div class="qr-corner bottom-right"></div>
+                <div class="scanning-line"></div>
+              </div>
+            </div>
+          `;
+        }, 1500);
+      }
+
+      function volverAtras() {
+        sessionStorage.removeItem("tiendaAVisitar");
+        window.location.href = "./dashboard.html";
+      }
+
+      function simularEscaneoExitoso() {
+        // Simular QR correcto
+        const qrCorrecto = simularEscaneoQR(tiendaActual.id);
+        procesarEscaneoQR(qrCorrecto);
+      }
+
+      function simularEscaneoError() {
+        // Simular QR incorrecto
+        procesarEscaneoQR("QR_INCORRECTO_123");
+      }
+
+      function procesarEscaneoQR(qrCode) {
+        // Actualizar estado del scanner
+        document.getElementById("scannerStatus").innerHTML = `
+          <div class="flex items-center space-x-3">
+            <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
+            <span class="text-gray-800 font-medium">Verificando código QR...</span>
+          </div>
+        `;
+
+        // Simular verificación
+        setTimeout(() => {
+          const esValido = validarQRTienda(qrCode, tiendaActual.id);
+
+          if (esValido) {
+            // QR válido - iniciar visita
+            const coordenadas = { lat: 18.9186, lng: -99.2342 }; // Simular coordenadas
+            iniciarVisitaTienda(
+              empleadoActual.id,
+              tiendaActual.id,
+              coordenadas
+            );
+
+            document.getElementById("modalExito").classList.remove("hidden");
+          } else {
+            // QR inválido
+            document.getElementById("modalError").classList.remove("hidden");
+          }
+        }, 1500);
+      }
+
+      function continuarAProductos() {
+        // Guardar datos de la visita en sessionStorage
+        sessionStorage.setItem("tiendaEnVisita", tiendaActual.id);
+
+        // Redirigir a página de productos
+        window.location.href = "./productos-visita.html";
+      }
+
+      function cerrarModalError() {
+        document.getElementById("modalError").classList.add("hidden");
+
+        // Restablecer estado del scanner
+        document.getElementById("scannerStatus").innerHTML = `
+          <div class="flex items-center space-x-3">
+            <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <span class="text-gray-800 font-medium">Buscando código QR...</span>
+          </div>
+        `;
+      }
+
+      // Inicializar cuando la página carga
+      document.addEventListener("DOMContentLoaded", initQRScanner);
+    </script>
+  </body>
+</html>

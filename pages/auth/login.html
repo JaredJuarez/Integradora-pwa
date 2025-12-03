@@ -1,196 +1,229 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Iniciar Sesión - PWA Sistema">
-    <meta name="theme-color" content="#4F46E5">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Iniciar Sesión - PWA Sistema" />
+    <meta name="theme-color" content="#4F46E5" />
     <title>Iniciar Sesión - PWA Sistema</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="manifest" href="../../manifest.json">
-    <link rel="stylesheet" href="../../assets/css/styles.css">
-</head>
-<body class="bg-gray-100">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="manifest" href="../../manifest.json" />
+    <link rel="stylesheet" href="../../assets/css/styles.css" />
+  </head>
+  <body class="bg-gray-100">
     <!-- Loader -->
-    <div id="loader" class="fixed inset-0 bg-white z-50 flex items-center justify-center hidden">
-        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-indigo-500"></div>
+    <div
+      id="loader"
+      class="fixed inset-0 bg-white z-50 flex items-center justify-center hidden"
+    >
+      <div
+        class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-indigo-500"
+      ></div>
     </div>
-    
-    <div class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8">
-            <!-- Logo y título -->
-            <div class="text-center">
-                <i class="fas fa-store text-6xl text-indigo-600"></i>
-                <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
-                    Iniciar Sesión
-                </h2>
-                <p class="mt-2 text-sm text-gray-600">
-                    ¿No tienes cuenta?
-                    <a href="registro.html" class="font-medium text-indigo-600 hover:text-indigo-500">
-                        Regístrate aquí
-                    </a>
-                </p>
-            </div>
 
-            <!-- Formulario -->
-            <form id="loginForm" class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md">
-                <div class="space-y-4">
-                    <!-- Email -->
-                    <div>
-                        <label for="email" class="block text-sm font-medium text-gray-700">
-                            Correo Electrónico
-                        </label>
-                        <div class="mt-1 relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-envelope text-gray-400"></i>
-                            </div>
-                            <input 
-                                id="email" 
-                                name="email" 
-                                type="email" 
-                                required 
-                                class="form-input pl-10 block w-full"
-                                placeholder="correo@ejemplo.com"
-                            >
-                        </div>
-                        <p class="mt-1 text-sm text-red-600 hidden" id="emailError"></p>
-                    </div>
-
-                    <!-- Contraseña -->
-                    <div>
-                        <label for="password" class="block text-sm font-medium text-gray-700">
-                            Contraseña
-                        </label>
-                        <div class="mt-1 relative">
-                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <i class="fas fa-lock text-gray-400"></i>
-                            </div>
-                            <input 
-                                id="password" 
-                                name="password" 
-                                type="password" 
-                                required 
-                                class="form-input pl-10 block w-full"
-                                placeholder="••••••••"
-                            >
-                            <button 
-                                type="button" 
-                                class="absolute inset-y-0 right-0 pr-3 flex items-center"
-                                onclick="togglePassword()"
-                            >
-                                <i class="fas fa-eye text-gray-400" id="toggleIcon"></i>
-                            </button>
-                        </div>
-                        <p class="mt-1 text-sm text-red-600 hidden" id="passwordError"></p>
-                    </div>
-
-                    <!-- Recordar y Olvidaste contraseña -->
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <input 
-                                id="remember" 
-                                name="remember" 
-                                type="checkbox" 
-                                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                            >
-                            <label for="remember" class="ml-2 block text-sm text-gray-900">
-                                Recordarme
-                            </label>
-                        </div>
-                        <div class="text-sm">
-                            <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">
-                                ¿Olvidaste tu contraseña?
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Botón de envío -->
-                <div>
-                    <button 
-                        type="submit" 
-                        class="w-full btn-primary py-3 text-white font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                    >
-                        <i class="fas fa-sign-in-alt mr-2"></i>
-                        Iniciar Sesión
-                    </button>
-                </div>
-
-                <!-- Demo de usuarios -->
-                <div class="mt-6">
-                    <p class="text-sm text-gray-600 text-center mb-3">Usuarios de prueba:</p>
-                    <div class="grid grid-cols-1 gap-2">
-                        <button 
-                            type="button" 
-                            class="text-sm bg-purple-50 text-purple-700 px-3 py-2 rounded hover:bg-purple-100"
-                            onclick="fillDemoUser('admin')"
-                        >
-                            <i class="fas fa-user-shield mr-1"></i> Admin: admin@pwa.com / Admin123
-                        </button>
-                        <button 
-                            type="button" 
-                            class="text-sm bg-blue-50 text-blue-700 px-3 py-2 rounded hover:bg-blue-100"
-                            onclick="fillDemoUser('cliente')"
-                        >
-                            <i class="fas fa-user mr-1"></i> Cliente: cliente@pwa.com / Cliente123
-                        </button>
-                        <button 
-                            type="button" 
-                            class="text-sm bg-green-50 text-green-700 px-3 py-2 rounded hover:bg-green-100"
-                            onclick="fillDemoUser('empleado')"
-                        >
-                            <i class="fas fa-briefcase mr-1"></i> Empleado: empleado@pwa.com / Empleado123
-                        </button>
-                    </div>
-                </div>
-            </form>
-
-            <!-- Volver al inicio -->
-            <div class="text-center">
-                <a href="../../index.html" class="text-sm text-gray-600 hover:text-indigo-600">
-                    <i class="fas fa-arrow-left mr-1"></i>
-                    Volver al inicio
-                </a>
-            </div>
+    <div
+      class="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8"
+    >
+      <div class="max-w-md w-full space-y-8">
+        <!-- Logo y título -->
+        <div class="text-center">
+          <i class="fas fa-store text-6xl text-indigo-600"></i>
+          <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+            Iniciar Sesión
+          </h2>
+          <p class="mt-2 text-sm text-gray-600">
+            ¿No tienes cuenta?
+            <a
+              href="registro.html"
+              class="font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Regístrate aquí
+            </a>
+          </p>
         </div>
+
+        <!-- Formulario -->
+        <form
+          id="loginForm"
+          class="mt-8 space-y-6 bg-white p-8 rounded-lg shadow-md"
+        >
+          <div class="space-y-4">
+            <!-- Email -->
+            <div>
+              <label
+                for="email"
+                class="block text-sm font-medium text-gray-700"
+              >
+                Correo Electrónico
+              </label>
+              <div class="mt-1 relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i class="fas fa-envelope text-gray-400"></i>
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  class="form-input pl-10 block w-full"
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
+              <p class="mt-1 text-sm text-red-600 hidden" id="emailError"></p>
+            </div>
+
+            <!-- Contraseña -->
+            <div>
+              <label
+                for="password"
+                class="block text-sm font-medium text-gray-700"
+              >
+                Contraseña
+              </label>
+              <div class="mt-1 relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                >
+                  <i class="fas fa-lock text-gray-400"></i>
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  class="form-input pl-10 block w-full"
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onclick="togglePassword()"
+                >
+                  <i class="fas fa-eye text-gray-400" id="toggleIcon"></i>
+                </button>
+              </div>
+              <p
+                class="mt-1 text-sm text-red-600 hidden"
+                id="passwordError"
+              ></p>
+            </div>
+
+            <!-- Recordar y Olvidaste contraseña -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <input
+                  id="remember"
+                  name="remember"
+                  type="checkbox"
+                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                />
+                <label for="remember" class="ml-2 block text-sm text-gray-900">
+                  Recordarme
+                </label>
+              </div>
+              <div class="text-sm">
+                <a
+                  href="#"
+                  class="font-medium text-indigo-600 hover:text-indigo-500"
+                >
+                  ¿Olvidaste tu contraseña?
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Botón de envío -->
+          <div>
+            <button
+              type="submit"
+              class="w-full btn-primary py-3 text-white font-medium rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              <i class="fas fa-sign-in-alt mr-2"></i>
+              Iniciar Sesión
+            </button>
+          </div>
+
+          <!-- Demo de usuarios -->
+          <div class="mt-6">
+            <p class="text-sm text-gray-600 text-center mb-3">
+              Usuarios de prueba:
+            </p>
+            <div class="grid grid-cols-1 gap-2">
+              <button
+                type="button"
+                class="text-sm bg-purple-50 text-purple-700 px-3 py-2 rounded hover:bg-purple-100"
+                onclick="fillDemoUser('admin')"
+              >
+                <i class="fas fa-user-shield mr-1"></i> Admin: admin@empresa.com
+                / Admin123
+              </button>
+              <button
+                type="button"
+                class="text-sm bg-green-50 text-green-700 px-3 py-2 rounded hover:bg-green-100"
+                onclick="fillDemoUser('empleado')"
+              >
+                <i class="fas fa-briefcase mr-1"></i> Empleado:
+                empleado@empresa.com / Empleado123
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Volver al inicio -->
+        <div class="text-center">
+          <a
+            href="../../index.html"
+            class="text-sm text-gray-600 hover:text-indigo-600"
+          >
+            <i class="fas fa-arrow-left mr-1"></i>
+            Volver al inicio
+          </a>
+        </div>
+      </div>
     </div>
 
     <script src="../../assets/js/utils.js"></script>
     <script src="../../assets/js/app.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script>
-        // Toggle password visibility
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const toggleIcon = document.getElementById('toggleIcon');
-            
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
-            }
-        }
+      // Toggle password visibility
+      function togglePassword() {
+        const passwordInput = document.getElementById("password");
+        const toggleIcon = document.getElementById("toggleIcon");
 
-        // Llenar con usuario demo
-        function fillDemoUser(type) {
-            const users = {
-                admin: { email: 'admin@pwa.com', password: 'Admin123' },
-                cliente: { email: 'cliente@pwa.com', password: 'Cliente123' },
-                empleado: { email: 'empleado@pwa.com', password: 'Empleado123' }
-            };
-            
-            document.getElementById('email').value = users[type].email;
-            document.getElementById('password').value = users[type].password;
+        if (passwordInput.type === "password") {
+          passwordInput.type = "text";
+          toggleIcon.classList.remove("fa-eye");
+          toggleIcon.classList.add("fa-eye-slash");
+        } else {
+          passwordInput.type = "password";
+          toggleIcon.classList.remove("fa-eye-slash");
+          toggleIcon.classList.add("fa-eye");
         }
+      }
 
-        // Manejar envío del formulario
-        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+      // Llenar con usuario demo
+      function fillDemoUser(type) {
+        const demoUsers = {
+          admin: { email: "admin@empresa.com", password: "Admin123" },
+          empleado: { email: "empleado@empresa.com", password: "Empleado123" },
+        };
+
+        document.getElementById("email").value = demoUsers[type].email;
+        document.getElementById("password").value = demoUsers[type].password;
+      }
+
+      // Manejar envío del formulario
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", handleLogin);
     </script>
-</body>
+  </body>
 </html>

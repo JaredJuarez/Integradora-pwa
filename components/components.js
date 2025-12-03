@@ -81,7 +81,7 @@ function createHeader(title = 'Dashboard', showMenuBtn = true) {
                                 </a>
                                 <div class="border-t"></div>
                                 <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-                                    <i class="fas fa-sign-out-alt mr-2"></i> Cerrar Sesión
+                                    <i class="fas fa-sign-out-alt mr-2">Cerrar Sesión</i>
                                 </button>
                             </div>
                         </div>

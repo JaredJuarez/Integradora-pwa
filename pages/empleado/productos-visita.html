@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seleccionar Productos - Empleado</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="manifest" href="../../manifest.json" />
+    <link rel="stylesheet" href="../../assets/css/styles.css" />
+
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+
+      .product-card {
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+
+      .product-card.selected {
+        border: 2px solid #4ade80;
+        background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+      }
+
+      .mobile-header {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .quantity-control {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+      }
+
+      .quantity-control.active {
+        border-color: #4ade80;
+      }
+
+      .category-tab {
+        transition: all 0.3s ease;
+      }
+
+      .category-tab.active {
+        background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+        color: white;
+        transform: scale(1.05);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header Móvil -->
+    <div class="mobile-header sticky top-0 z-50">
+      <div class="max-w-md mx-auto px-4 py-3">
+        <div class="flex items-center space-x-3">
+          <button
+            onclick="volverAtras()"
+            class="p-2 text-gray-600 hover:text-blue-500"
+          >
+            <i class="fas fa-arrow-left text-xl"></i>
+          </button>
+          <div class="flex-1">
+            <h1 class="text-lg font-bold text-gray-800">
+              Seleccionar Productos
+            </h1>
+            <p class="text-sm text-gray-600" id="nombreTienda">
+              Productos para surtir
+            </p>
+          </div>
+          <div class="text-right">
+            <div class="text-sm font-bold text-blue-600" id="contadorProductos">
+              0 productos
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <div class="max-w-md mx-auto px-4 pb-24">
+      <!-- Información de la tienda -->
+      <div class="bg-white bg-opacity-90 rounded-lg p-4 mt-4 mb-6 shadow-lg">
+        <div class="flex items-center space-x-3">
+          <div
+            class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center"
+          >
+            <i class="fas fa-check text-white text-sm"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-gray-800" id="tiendaNombre">
+              Cargando...
+            </h2>
+            <p class="text-sm text-gray-600">Visita en progreso</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instrucciones -->
+      <div class="bg-white bg-opacity-90 rounded-lg p-4 mb-6 shadow-lg">
+        <div class="flex items-start space-x-3">
+          <div
+            class="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0"
+          >
+            <i class="fas fa-info text-white text-sm"></i>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-800 mb-1">Instrucciones</h3>
+            <p class="text-sm text-gray-600">
+              Selecciona los productos que la tienda necesita y especifica las
+              cantidades.
+              <strong>No es obligatorio agregar productos.</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros por categoría -->
+      <div class="mb-6">
+        <div class="flex overflow-x-auto space-x-3 pb-2">
+          <button
+            onclick="filtrarPorCategoria('todas')"
+            class="category-tab active flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
+          >
+            Todas
+          </button>
+          <button
+            onclick="filtrarPorCategoria('Bebidas')"
+            class="category-tab flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
+          >
+            Bebidas
+          </button>
+          <button
+            onclick="filtrarPorCategoria('Botanas')"
+            class="category-tab flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
+          >
+            Botanas
+          </button>
+          <button
+            onclick="filtrarPorCategoria('Lácteos')"
+            class="category-tab flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
+          >
+            Lácteos
+          </button>
+          <button
+            onclick="filtrarPorCategoria('Limpieza')"
+            class="category-tab flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
+          >
+            Limpieza
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de Productos -->
+      <div class="space-y-3 mb-6" id="productosContainer">
+        <!-- Los productos se generarán dinámicamente -->
+      </div>
+
+      <!-- Resumen de selección -->
+      <div
+        id="resumenSeleccion"
+        class="bg-white bg-opacity-95 rounded-lg p-4 shadow-lg hidden"
+      >
+        <h3 class="font-bold text-gray-800 mb-3 flex items-center">
+          <i class="fas fa-clipboard-list mr-2 text-blue-500"></i>
+          Productos Seleccionados
+        </h3>
+        <div id="listaSeleccionados" class="space-y-2 mb-4">
+          <!-- Lista dinámica -->
+        </div>
+        <div class="border-t pt-3">
+          <div class="text-sm text-gray-600">
+            Total de productos:
+            <span id="totalProductos" class="font-bold">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Botones flotantes -->
+    <div class="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg">
+      <div class="max-w-md mx-auto px-4 py-3">
+        <div class="flex space-x-3">
+          <button
+            onclick="continuarSinProductos()"
+            class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-medium"
+          >
+            <i class="fas fa-forward mr-2"></i>Continuar sin productos
+          </button>
+          <button
+            onclick="continuarConProductos()"
+            id="btnContinuar"
+            class="flex-1 btn-primary py-3 rounded-lg font-medium disabled:bg-gray-300 disabled:cursor-not-allowed"
+            disabled
+          >
+            <i class="fas fa-camera mr-2"></i>Tomar foto
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/app.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/employee-data.js"></script>
+
+    <script>
+      // Proteger página solo para empleados
+      protectPage("empleado");
+
+      let tiendaActual;
+      let empleadoActual;
+      let productos = [];
+      let productosSeleccionados = {};
+      let categoriaActual = "todas";
+
+      function initProductos() {
+        empleadoActual = getCurrentUser();
+        const tiendaId = sessionStorage.getItem("tiendaEnVisita");
+
+        if (!tiendaId) {
+          alert("No hay una visita activa");
+          window.location.href = "./dashboard.html";
+          return;
+        }
+
+        // Obtener información de la tienda
+        const tiendas = getTiendasAsignadasEmpleado(empleadoActual.id);
+        tiendaActual = tiendas.find((t) => t.id === tiendaId);
+
+        if (!tiendaActual) {
+          alert("Tienda no encontrada");
+          window.location.href = "./dashboard.html";
+          return;
+        }
+
+        // Actualizar información en la UI
+        document.getElementById("nombreTienda").textContent =
+          tiendaActual.nombre;
+        document.getElementById("tiendaNombre").textContent =
+          tiendaActual.nombre;
+
+        // Cargar productos disponibles
+        productos = getProductosSurtir();
+        cargarProductos();
+      }
+
+      function cargarProductos() {
+        const container = document.getElementById("productosContainer");
+        let productosFiltrados = productos;
+
+        // Filtrar por categoría si no es 'todas'
+        if (categoriaActual !== "todas") {
+          productosFiltrados = productos.filter(
+            (p) => p.categoria === categoriaActual
+          );
+        }
+
+        if (productosFiltrados.length === 0) {
+          container.innerHTML = `
+            <div class="bg-white bg-opacity-90 rounded-lg p-6 text-center shadow-lg">
+              <i class="fas fa-box-open text-gray-400 text-3xl mb-3"></i>
+              <p class="text-gray-600">No hay productos en esta categoría</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = productosFiltrados
+          .map((producto) => {
+            const isSelected = productosSeleccionados[producto.id];
+            const cantidad = isSelected
+              ? productosSeleccionados[producto.id].cantidad
+              : 0;
+            const cardClass = isSelected
+              ? "product-card selected"
+              : "product-card bg-white";
+
+            return `
+            <div class="${cardClass} bg-opacity-90 rounded-lg p-4 shadow-lg">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex-1">
+                  <h3 class="font-bold text-gray-800 mb-1">${
+                    producto.nombre
+                  }</h3>
+                  <p class="text-sm text-gray-600 mb-2">${
+                    producto.categoria
+                  }</p>
+                  <p class="text-sm font-medium text-blue-600">$${producto.precioSugerido.toFixed(
+                    2
+                  )} / ${producto.unidad}</p>
+                </div>
+                <div class="ml-3">
+                  <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-box text-gray-400 text-sm"></i>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Control de cantidad -->
+              <div class="quantity-control p-3 ${isSelected ? "active" : ""}">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm font-medium text-gray-700">Cantidad:</span>
+                  <div class="flex items-center space-x-3">
+                    <button onclick="cambiarCantidad('${producto.id}', -1)" 
+                            class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center">
+                      <i class="fas fa-minus text-xs text-gray-600"></i>
+                    </button>
+                    <input type="number" 
+                           id="cantidad_${producto.id}" 
+                           value="${cantidad}" 
+                           onchange="actualizarCantidad('${
+                             producto.id
+                           }', this.value)"
+                           class="w-16 text-center border border-gray-300 rounded px-2 py-1 text-sm" 
+                           min="0" 
+                           max="999">
+                    <button onclick="cambiarCantidad('${producto.id}', 1)" 
+                            class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center">
+                      <i class="fas fa-plus text-xs text-gray-600"></i>
+                    </button>
+                  </div>
+                </div>
+                ${
+                  isSelected
+                    ? `
+                  <div class="mt-2 text-xs text-gray-500">
+                    <input type="text" 
+                           id="obs_${producto.id}" 
+                           placeholder="Observaciones (opcional)" 
+                           value="${
+                             productosSeleccionados[producto.id]
+                               .observaciones || ""
+                           }"
+                           onchange="actualizarObservaciones('${
+                             producto.id
+                           }', this.value)"
+                           class="w-full border border-gray-200 rounded px-2 py-1 text-sm">
+                  </div>
+                `
+                    : ""
+                }
+              </div>
+            </div>
+          `;
+          })
+          .join("");
+      }
+
+      function filtrarPorCategoria(categoria) {
+        categoriaActual = categoria;
+
+        // Actualizar tabs
+        document.querySelectorAll(".category-tab").forEach((tab) => {
+          tab.classList.remove("active");
+        });
+        event.target.classList.add("active");
+
+        // Recargar productos
+        cargarProductos();
+      }
+
+      function cambiarCantidad(productoId, delta) {
+        const input = document.getElementById(`cantidad_${productoId}`);
+        let cantidad = parseInt(input.value) + delta;
+        cantidad = Math.max(0, cantidad);
+        input.value = cantidad;
+        actualizarCantidad(productoId, cantidad);
+      }
+
+      function actualizarCantidad(productoId, cantidad) {
+        cantidad = parseInt(cantidad) || 0;
+
+        if (cantidad > 0) {
+          const producto = productos.find((p) => p.id === productoId);
+          productosSeleccionados[productoId] = {
+            producto: producto,
+            cantidad: cantidad,
+            observaciones:
+              productosSeleccionados[productoId]?.observaciones || "",
+          };
+        } else {
+          delete productosSeleccionados[productoId];
+        }
+
+        actualizarContadores();
+        cargarProductos();
+      }
+
+      function actualizarObservaciones(productoId, observaciones) {
+        if (productosSeleccionados[productoId]) {
+          productosSeleccionados[productoId].observaciones = observaciones;
+        }
+      }
+
+      function actualizarContadores() {
+        const totalProductos = Object.values(productosSeleccionados).reduce(
+          (sum, item) => sum + item.cantidad,
+          0
+        );
+        const cantidadItems = Object.keys(productosSeleccionados).length;
+
+        document.getElementById(
+          "contadorProductos"
+        ).textContent = `${cantidadItems} productos`;
+
+        // Mostrar/ocultar resumen
+        const resumen = document.getElementById("resumenSeleccion");
+        const btnContinuar = document.getElementById("btnContinuar");
+
+        if (cantidadItems > 0) {
+          resumen.classList.remove("hidden");
+          btnContinuar.disabled = false;
+          btnContinuar.classList.remove(
+            "disabled:bg-gray-300",
+            "disabled:cursor-not-allowed"
+          );
+
+          // Actualizar resumen
+          const lista = document.getElementById("listaSeleccionados");
+          lista.innerHTML = Object.values(productosSeleccionados)
+            .map(
+              (item) => `
+            <div class="flex justify-between items-center text-sm">
+              <span>${item.producto.nombre}</span>
+              <span class="font-medium">${item.cantidad} ${item.producto.unidad}</span>
+            </div>
+          `
+            )
+            .join("");
+
+          document.getElementById("totalProductos").textContent =
+            totalProductos;
+        } else {
+          resumen.classList.add("hidden");
+          btnContinuar.disabled = true;
+          btnContinuar.classList.add(
+            "disabled:bg-gray-300",
+            "disabled:cursor-not-allowed"
+          );
+        }
+      }
+
+      function volverAtras() {
+        if (Object.keys(productosSeleccionados).length > 0) {
+          if (confirm("¿Estás seguro? Se perderá la selección de productos.")) {
+            sessionStorage.removeItem("tiendaEnVisita");
+            window.location.href = "./qr-scanner.html";
+          }
+        } else {
+          sessionStorage.removeItem("tiendaEnVisita");
+          window.location.href = "./qr-scanner.html";
+        }
+      }
+
+      function continuarSinProductos() {
+        if (confirm("¿Continuar sin seleccionar productos?")) {
+          // Limpiar selección y continuar
+          productosSeleccionados = {};
+          guardarSeleccionYContinuar();
+        }
+      }
+
+      function continuarConProductos() {
+        if (Object.keys(productosSeleccionados).length === 0) {
+          alert(
+            'Selecciona al menos un producto o usa "Continuar sin productos"'
+          );
+          return;
+        }
+
+        guardarSeleccionYContinuar();
+      }
+
+      function guardarSeleccionYContinuar() {
+        // Guardar selección en sessionStorage
+        const datosVisita = {
+          tiendaId: tiendaActual.id,
+          productos: Object.values(productosSeleccionados).map((item) => ({
+            productoId: item.producto.id,
+            nombre: item.producto.nombre,
+            cantidad: item.cantidad,
+            observaciones: item.observaciones || "",
+          })),
+        };
+
+        sessionStorage.setItem(
+          "datosVisitaActual",
+          JSON.stringify(datosVisita)
+        );
+
+        // Redirigir a cámara
+        window.location.href = "./camara-estante.html";
+      }
+
+      // Inicializar cuando la página carga
+      document.addEventListener("DOMContentLoaded", initProductos);
+    </script>
+  </body>
+</html>
