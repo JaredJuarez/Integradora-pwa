@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Progressive Web App - Sistema de Gestión">
+    <meta name="theme-color" content="#4F46E5">
+    <title>PWA Sistema de Gestión</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="assets/css/styles.css">
+    
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="assets/images/icons/icon-192x192.png">
+</head>
+<body class="bg-gray-100">
+    <!-- Loader -->
+    <div id="loader" class="fixed inset-0 bg-white z-50 flex items-center justify-center hidden">
+        <div class="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-indigo-500"></div>
+    </div>
+
+    <!-- Landing Page -->
+    <div class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <i class="fas fa-store text-3xl text-indigo-600"></i>
+                        <span class="ml-2 text-2xl font-bold text-gray-900">PWA Sistema</span>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="pages/auth/login.html" class="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
+                            Iniciar Sesión
+                        </a>
+                        <a href="pages/auth/registro.html" class="bg-indigo-600 text-white hover:bg-indigo-700 px-4 py-2 rounded-md text-sm font-medium">
+                            Registrarse
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <main class="flex-grow">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <div class="text-center">
+                    <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
+                        <span class="block">Sistema de Gestión</span>
+                        <span class="block text-indigo-600">Progressive Web App</span>
+                    </h1>
+                    <p class="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+                        Plataforma completa de gestión con roles diferenciados para Administradores, Clientes y Empleados.
+                        Funciona online y offline.
+                    </p>
+                    <div class="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
+                        <div class="rounded-md shadow">
+                            <a href="pages/auth/login.html" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10">
+                                Comenzar
+                            </a>
+                        </div>
+                        <div class="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
+                            <button id="installBtn" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-indigo-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10 hidden">
+                                <i class="fas fa-download mr-2"></i> Instalar App
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="mt-20">
+                    <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                        <!-- Feature 1 -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-5">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-user-shield text-3xl text-indigo-600"></i>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dt class="text-lg font-medium text-gray-900 truncate">
+                                            Administración
+                                        </dt>
+                                        <dd class="mt-1 text-sm text-gray-500">
+                                            Gestión completa de usuarios, productos y reportes
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature 2 -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-5">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-shopping-cart text-3xl text-indigo-600"></i>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dt class="text-lg font-medium text-gray-900 truncate">
+                                            E-Commerce
+                                        </dt>
+                                        <dd class="mt-1 text-sm text-gray-500">
+                                            Catálogo de productos, carrito y compras
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature 3 -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-5">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-box text-3xl text-indigo-600"></i>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dt class="text-lg font-medium text-gray-900 truncate">
+                                            Inventario
+                                        </dt>
+                                        <dd class="mt-1 text-sm text-gray-500">
+                                            Control de stock y gestión de ventas
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature 4 -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-5">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-wifi text-3xl text-indigo-600"></i>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dt class="text-lg font-medium text-gray-900 truncate">
+                                            Modo Offline
+                                        </dt>
+                                        <dd class="mt-1 text-sm text-gray-500">
+                                            Funciona sin conexión a internet
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature 5 -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-5">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-bell text-3xl text-indigo-600"></i>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dt class="text-lg font-medium text-gray-900 truncate">
+                                            Notificaciones
+                                        </dt>
+                                        <dd class="mt-1 text-sm text-gray-500">
+                                            Alertas en tiempo real
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Feature 6 -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="p-5">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-mobile-alt text-3xl text-indigo-600"></i>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dt class="text-lg font-medium text-gray-900 truncate">
+                                            Responsive
+                                        </dt>
+                                        <dd class="mt-1 text-sm text-gray-500">
+                                            Optimizado para todos los dispositivos
+                                        </dd>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <p class="text-center text-gray-500 text-sm">
+                    &copy; 2025 PWA Sistema de Gestión. Todos los derechos reservados.
+                </p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productos - PWA Sistema</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="manifest" href="../../manifest.json">
+    <link rel="stylesheet" href="../../assets/css/styles.css">
+</head>
+<body class="bg-gray-100">
+    <div class="flex min-h-screen">
+        <div id="sidebarContainer"></div>
+
+        <div class="flex-1 flex flex-col">
+            <div id="headerContainer"></div>
+
+            <main class="flex-1 p-4 sm:p-6 lg:p-8">
+                <!-- Filtros -->
+                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <input 
+                                type="text" 
+                                id="searchInput" 
+                                placeholder="Buscar productos..." 
+                                class="form-input w-full"
+                                onkeyup="Timing.debounce(filterProducts, 300)()"
+                            >
+                        </div>
+                        <div>
+                            <select id="categoryFilter" class="form-input w-full" onchange="filterProducts()">
+                                <option value="">Todas las categorías</option>
+                            </select>
+                        </div>
+                        <div>
+                            <select id="sortBy" class="form-input w-full" onchange="filterProducts()">
+                                <option value="nombre-asc">Nombre A-Z</option>
+                                <option value="nombre-desc">Nombre Z-A</option>
+                                <option value="precio-asc">Menor precio</option>
+                                <option value="precio-desc">Mayor precio</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button onclick="clearFilters()" class="btn-secondary w-full">
+                                <i class="fas fa-redo mr-2"></i> Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Productos Grid -->
+                <div id="productsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Productos dinámicos -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Producto -->
+    <div id="productDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <button onclick="closeProductModal()" class="float-right text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-2xl"></i>
+                </button>
+                <div id="productDetailContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/app.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/data.js"></script>
+    <script src="../../components/components.js"></script>
+    <script>
+        protectPage('cliente');
+        document.getElementById('sidebarContainer').innerHTML = createClienteSidebar();
+        document.getElementById('headerContainer').innerHTML = createHeader('Productos');
+        updateCartBadge();
+
+        function loadCategories() {
+            const select = document.getElementById('categoryFilter');
+            CATEGORIES.forEach(cat => {
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+        }
+
+        function loadProducts() {
+            const search = document.getElementById('searchInput').value;
+            const categoria = document.getElementById('categoryFilter').value;
+            const sortBy = document.getElementById('sortBy').value;
+            
+            const products = getProducts({ search, categoria, sortBy, activeOnly: true });
+            const grid = document.getElementById('productsGrid');
+            const favorites = Storage.get('favorites') || [];
+            
+            grid.innerHTML = products.map(product => {
+                const isFavorite = favorites.includes(product.id);
+                return `
+                    <div class="bg-white rounded-lg shadow-md overflow-hidden card-hover">
+                        <div class="relative">
+                            <img src="${product.imagen}" alt="${product.nombre}" class="w-full h-64 object-cover cursor-pointer" onclick="showProductDetail(${product.id})">
+                            <button 
+                                onclick="toggleFavorite(${product.id})" 
+                                class="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
+                            >
+                                <i class="fas fa-heart ${isFavorite ? 'text-red-500' : 'text-gray-400'}"></i>
+                            </button>
+                            ${product.stock < 10 ? '<span class="absolute top-2 left-2 bg-yellow-500 text-white text-xs px-2 py-1 rounded">Pocas unidades</span>' : ''}
+                        </div>
+                        <div class="p-4">
+                            <span class="text-xs text-gray-500 uppercase">${product.categoria}</span>
+                            <h4 class="font-semibold text-gray-900 mt-1 mb-2 cursor-pointer hover:text-blue-600" onclick="showProductDetail(${product.id})">
+                                ${Format.truncate(product.nombre, 40)}
+                            </h4>
+                            <p class="text-sm text-gray-600 mb-3">${Format.truncate(product.descripcion, 60)}</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-2xl font-bold text-blue-600">${Format.currency(product.precio)}</span>
+                                <button onclick="addToCart(${product.id})" class="btn-primary px-4 py-2">
+                                    <i class="fas fa-cart-plus mr-2"></i> Agregar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterProducts() {
+            loadProducts();
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('sortBy').value = 'nombre-asc';
+            loadProducts();
+        }
+
+        function addToCart(productId) {
+            const product = getProductById(productId);
+            if (!product) return;
+            
+            let cart = Storage.get('cart') || [];
+            const existingItem = cart.find(item => item.productoId === productId);
+            
+            if (existingItem) {
+                if (existingItem.cantidad < product.stock) {
+                    existingItem.cantidad++;
+                    Storage.set('cart', cart);
+                    showNotification('Cantidad actualizada en el carrito', 'success');
+                } else {
+                    showNotification('No hay más stock disponible', 'warning');
+                    return;
+                }
+            } else {
+                cart.push({
+                    productoId: productId,
+                    nombre: product.nombre,
+                    precio: product.precio,
+                    imagen: product.imagen,
+                    cantidad: 1
+                });
+                Storage.set('cart', cart);
+                showNotification('Producto agregado al carrito', 'success');
+            }
+            
+            updateCartBadge();
+        }
+
+        function toggleFavorite(productId) {
+            let favorites = Storage.get('favorites') || [];
+            const index = favorites.indexOf(productId);
+            
+            if (index > -1) {
+                favorites.splice(index, 1);
+                showNotification('Eliminado de favoritos', 'info');
+            } else {
+                favorites.push(productId);
+                showNotification('Agregado a favoritos', 'success');
+            }
+            
+            Storage.set('favorites', favorites);
+            loadProducts();
+        }
+
+        function showProductDetail(productId) {
+            const product = getProductById(productId);
+            if (!product) return;
+            
+            const modal = document.getElementById('productDetailModal');
+            const content = document.getElementById('productDetailContent');
+            
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                    <div>
+                        <img src="${product.imagen}" alt="${product.nombre}" class="w-full rounded-lg">
+                    </div>
+                    <div>
+                        <span class="text-sm text-gray-500 uppercase">${product.categoria}</span>
+                        <h2 class="text-2xl font-bold text-gray-900 mt-2 mb-4">${product.nombre}</h2>
+                        <p class="text-gray-600 mb-4">${product.descripcion}</p>
+                        <div class="border-t border-b py-4 mb-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-gray-600">Precio:</span>
+                                <span class="text-3xl font-bold text-blue-600">${Format.currency(product.precio)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Stock disponible:</span>
+                                <span class="font-semibold ${product.stock < 10 ? 'text-yellow-600' : 'text-green-600'}">
+                                    ${product.stock} unidades
+                                </span>
+                            </div>
+                        </div>
+                        <button onclick="addToCart(${product.id}); closeProductModal();" class="btn-primary w-full py-3 text-lg">
+                            <i class="fas fa-cart-plus mr-2"></i> Agregar al Carrito
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productDetailModal').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+            loadProducts();
+        });
+
+        window.addToCart = addToCart;
+        window.toggleFavorite = toggleFavorite;
+        window.showProductDetail = showProductDetail;
+        window.closeProductModal = closeProductModal;
+        window.filterProducts = filterProducts;
+        window.clearFilters = clearFilters;
+    </script>
+</body>
+</html>
