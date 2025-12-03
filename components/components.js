@@ -49,7 +49,7 @@ function createHeader(title = 'Dashboard', showMenuBtn = true) {
                                     </div>
                                 </div>
                                 <div class="px-4 py-2 border-t">
-                                    <a href="#" class="text-sm text-indigo-600 hover:text-indigo-500">Ver todas</a>
+                                    <a href="#" class="text-sm text-gray-700 hover:text-gray-900">Ver todas</a>
                                 </div>
                             </div>
                         </div>
@@ -60,7 +60,7 @@ function createHeader(title = 'Dashboard', showMenuBtn = true) {
                                 onclick="toggleUserMenu()" 
                                 class="flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
                             >
-                                <div class="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-semibold">
+                                <div class="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold">
                                     ${user.nombre.charAt(0).toUpperCase()}
                                 </div>
                                 <i class="fas fa-chevron-down ml-2 text-sm"></i>
@@ -95,10 +95,10 @@ function createHeader(title = 'Dashboard', showMenuBtn = true) {
 // Sidebar para administrador
 function createAdminSidebar() {
     const currentPath = window.location.pathname;
-    const isActive = (path) => currentPath.includes(path) ? 'bg-indigo-700' : '';
+    const isActive = (path) => currentPath.includes(path) ? 'bg-gray-700' : '';
     
     return `
-        <aside id="sidebar" class="sidebar bg-indigo-800 text-white w-64 min-h-screen flex flex-col">
+        <aside id="sidebar" class="sidebar bg-gray-800 text-white w-64 min-h-screen flex flex-col">
             <div class="p-6">
                 <div class="flex items-center space-x-3">
                     <i class="fas fa-store text-3xl"></i>
@@ -107,39 +107,39 @@ function createAdminSidebar() {
             </div>
             
             <nav class="flex-1 px-4 space-y-2">
-                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-indigo-700 transition ${isActive('dashboard')}">
+                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('dashboard')}">
                     <i class="fas fa-home w-6"></i>
                     <span class="ml-3">Dashboard</span>
                 </a>
                 
-                <a href="usuarios-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-indigo-700 transition ${isActive('usuarios')}">
+                <a href="usuarios-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('usuarios')}">
                     <i class="fas fa-users w-6"></i>
                     <span class="ml-3">Usuarios</span>
                 </a>
                 
-                <a href="productos-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-indigo-700 transition ${isActive('productos')}">
+                <a href="productos-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('productos')}">
                     <i class="fas fa-box w-6"></i>
                     <span class="ml-3">Productos</span>
                 </a>
                 
-                <a href="empleados-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-indigo-700 transition ${isActive('empleados')}">
+                <a href="empleados-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('empleados')}">
                     <i class="fas fa-briefcase w-6"></i>
                     <span class="ml-3">Empleados</span>
                 </a>
                 
-                <a href="reportes.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-indigo-700 transition ${isActive('reportes')}">
+                <a href="reportes.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('reportes')}">
                     <i class="fas fa-chart-bar w-6"></i>
                     <span class="ml-3">Reportes</span>
                 </a>
                 
-                <a href="configuracion.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-indigo-700 transition ${isActive('configuracion')}">
+                <a href="configuracion.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive('configuracion')}">
                     <i class="fas fa-cog w-6"></i>
                     <span class="ml-3">Configuración</span>
                 </a>
             </nav>
             
-            <div class="p-4 border-t border-indigo-700">
-                <button onclick="logout()" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-indigo-700 transition text-red-300">
+            <div class="p-4 border-t border-gray-700">
+                <button onclick="logout()" class="w-full flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition text-red-300">
                     <i class="fas fa-sign-out-alt w-6"></i>
                     <span class="ml-3">Cerrar Sesión</span>
                 </button>

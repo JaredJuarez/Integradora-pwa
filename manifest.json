@@ -5,8 +5,8 @@
   "start_url": "/Integradora-pwa/",
   "scope": "/Integradora-pwa/",
   "display": "standalone",
-  "background_color": "#667eea",
-  "theme_color": "#4F46E5",
+  "background_color": "#1f2937",
+  "theme_color": "#374151",
   "orientation": "portrait-primary",
   "icons": [
     {

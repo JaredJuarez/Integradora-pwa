@@ -16,7 +16,7 @@
     <style>
       /* Estilos específicos para móvil */
       body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
         min-height: 100vh;
       }
 
@@ -56,7 +56,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <div
-              class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center"
+              class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center"
             >
               <i class="fas fa-truck text-white text-sm"></i>
             </div>
@@ -82,7 +82,7 @@
       <!-- Estadísticas Rápidas -->
       <div class="grid grid-cols-3 gap-3 mt-4 mb-6">
         <div class="stats-card rounded-lg p-3 text-center">
-          <div class="text-2xl font-bold text-blue-600" id="tiendasCompletadas">
+          <div class="text-2xl font-bold text-gray-700" id="tiendasCompletadas">
             0
           </div>
           <div class="text-xs text-gray-600">Completadas</div>
@@ -247,7 +247,7 @@
               : "store-card bg-white";
             const actionButton = isCompleted
               ? '<span class="text-white text-sm"><i class="fas fa-check-circle mr-1"></i>Completada</span>'
-              : '<span class="text-blue-600 text-sm font-medium">Visitar <i class="fas fa-arrow-right ml-1"></i></span>';
+              : '<span class="text-gray-700 text-sm font-medium">Visitar <i class="fas fa-arrow-right ml-1"></i></span>';
 
             return `
             <div class="${cardClass} rounded-lg p-4 shadow-md ${
@@ -260,7 +260,7 @@
                 <div class="flex-1">
                   <div class="flex items-center space-x-2 mb-2">
                     <i class="fas fa-store text-lg ${
-                      isCompleted ? "text-white" : "text-blue-500"
+                      isCompleted ? "text-white" : "text-gray-700"
                     }"></i>
                     <h3 class="font-bold text-lg ${
                       isCompleted ? "text-white" : "text-gray-800"
