@@ -244,6 +244,49 @@ function toggleSidebar() {
   }
 }
 
+// Toggle user menu dropdown
+function toggleUserMenu() {
+  const dropdown = document.getElementById("userDropdown");
+  if (dropdown) {
+    dropdown.classList.toggle("hidden");
+  }
+}
+
+// Toggle notifications dropdown
+function toggleNotifications() {
+  const dropdown = document.getElementById("notificationsDropdown");
+  if (dropdown) {
+    dropdown.classList.toggle("hidden");
+  }
+}
+
+// Cerrar dropdowns al hacer clic fuera
+document.addEventListener("click", (e) => {
+  const userDropdown = document.getElementById("userDropdown");
+  const notificationsDropdown = document.getElementById(
+    "notificationsDropdown"
+  );
+
+  // Cerrar user dropdown si está abierto y el click es fuera
+  if (userDropdown && !userDropdown.classList.contains("hidden")) {
+    const userButton = e.target.closest('[onclick="toggleUserMenu()"]');
+    if (!userButton && !userDropdown.contains(e.target)) {
+      userDropdown.classList.add("hidden");
+    }
+  }
+
+  // Cerrar notifications dropdown si está abierto y el click es fuera
+  if (
+    notificationsDropdown &&
+    !notificationsDropdown.classList.contains("hidden")
+  ) {
+    const notifButton = e.target.closest('[onclick="toggleNotifications()"]');
+    if (!notifButton && !notificationsDropdown.contains(e.target)) {
+      notificationsDropdown.classList.add("hidden");
+    }
+  }
+});
+
 // Cerrar sidebar al hacer clic fuera
 document.addEventListener("click", (e) => {
   const sidebar = document.getElementById("sidebar");
@@ -257,15 +300,15 @@ document.addEventListener("click", (e) => {
 });
 
 // Inicialización
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   // Inicializar datos de usuarios y sincronizar con empleados
   if (typeof initDemoUsers === "function") {
-    initDemoUsers();
+    await initDemoUsers();
   }
 
   // Sincronizar usuarios con empleados si adminDataManager está disponible
   if (typeof syncUsersWithEmployees === "function") {
-    syncUsersWithEmployees();
+    await syncUsersWithEmployees();
   }
 
   // Solicitar permisos de notificaciones después de 5 segundos
@@ -286,3 +329,6 @@ window.closeModal = closeModal;
 window.confirmAction = confirmAction;
 window.showLoader = showLoader;
 window.hideLoader = hideLoader;
+window.toggleSidebar = toggleSidebar;
+window.toggleUserMenu = toggleUserMenu;
+window.toggleNotifications = toggleNotifications;

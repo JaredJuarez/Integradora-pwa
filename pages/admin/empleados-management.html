@@ -266,23 +266,26 @@
     </div>
 
     <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/mock-api.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
     <script src="../../assets/js/admin-data.js"></script>
     <script src="../../components/components.js"></script>
 
     <script>
-      // Verificar autenticación
-      checkAuth(["admin"]);
-
       // Variables globales
       let editingEmployeeId = null;
 
       // Inicializar página
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Cargar UI primero
         loadSidebarAndHeader();
-        loadEmployees();
-        loadStats();
+
+        // Verificar autenticación
+        protectPage("administrador");
+
+        await loadEmployees();
+        await loadStats();
 
         // Evento de búsqueda
         document
@@ -298,12 +301,13 @@
       function loadSidebarAndHeader() {
         document.getElementById("sidebarContainer").innerHTML =
           createAdminSidebar();
-        document.getElementById("headerContainer").innerHTML =
-          createAdminHeader();
+        document.getElementById("headerContainer").innerHTML = createHeader(
+          "Gestión de Empleados"
+        );
       }
 
-      function loadEmployees() {
-        const employees = adminDataManager.getAllEmployees();
+      async function loadEmployees() {
+        const employees = await adminDataManager.getAllEmployees();
         const tbody = document.getElementById("employeesTableBody");
 
         if (employees.length === 0) {
@@ -373,8 +377,8 @@
           .join("");
       }
 
-      function loadStats() {
-        const employees = adminDataManager.getAllEmployees();
+      async function loadStats() {
+        const employees = await adminDataManager.getAllEmployees();
         const active = employees.filter((emp) => emp.activo).length;
         const inactive = employees.filter((emp) => !emp.activo).length;
 

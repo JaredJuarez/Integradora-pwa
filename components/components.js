@@ -117,18 +117,18 @@ function createAdminSidebar() {
             </div>
             
             <nav class="flex-1 px-4 space-y-2">
-                <a href="dashboard.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
-                  "dashboard"
-                )}">
-                    <i class="fas fa-home w-6"></i>
-                    <span class="ml-3">Dashboard</span>
-                </a>
-                
-                <a href="usuarios-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
-                  "usuarios"
+                <a href="empleados-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "empleados"
                 )}">
                     <i class="fas fa-users w-6"></i>
-                    <span class="ml-3">Usuarios</span>
+                    <span class="ml-3">Empleados</span>
+                </a>
+                
+                <a href="tiendas-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "tiendas"
+                )}">
+                    <i class="fas fa-store w-6"></i>
+                    <span class="ml-3">Tiendas</span>
                 </a>
                 
                 <a href="productos-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
@@ -136,27 +136,6 @@ function createAdminSidebar() {
                 )}">
                     <i class="fas fa-box w-6"></i>
                     <span class="ml-3">Productos</span>
-                </a>
-                
-                <a href="empleados-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
-                  "empleados"
-                )}">
-                    <i class="fas fa-briefcase w-6"></i>
-                    <span class="ml-3">Empleados</span>
-                </a>
-                
-                <a href="reportes.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
-                  "reportes"
-                )}">
-                    <i class="fas fa-chart-bar w-6"></i>
-                    <span class="ml-3">Reportes</span>
-                </a>
-                
-                <a href="configuracion.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
-                  "configuracion"
-                )}">
-                    <i class="fas fa-cog w-6"></i>
-                    <span class="ml-3">Configuración</span>
                 </a>
             </nav>
             

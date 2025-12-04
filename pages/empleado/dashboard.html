@@ -172,6 +172,7 @@
 
     <!-- Scripts -->
     <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/mock-api.js"></script>
     <script src="../../assets/js/app.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/data.js"></script>
@@ -181,13 +182,10 @@
       // Proteger página solo para empleados
       protectPage("empleado");
 
-      // Inicializar datos del empleado
-      initEmpleadoData();
-
       let empleadoActual;
       let estadisticas;
 
-      function initDashboard() {
+      async function initDashboard() {
         empleadoActual = getCurrentUser();
         if (!empleadoActual) {
           window.location.href = "../auth/login.html";
@@ -199,12 +197,12 @@
           empleadoActual.nombre;
 
         // Cargar datos
-        cargarEstadisticas();
-        cargarTiendasAsignadas();
+        await cargarEstadisticas();
+        await cargarTiendasAsignadas();
       }
 
-      function cargarEstadisticas() {
-        estadisticas = getEstadisticasEmpleado(empleadoActual.id);
+      async function cargarEstadisticas() {
+        estadisticas = await getEstadisticasEmpleado(empleadoActual.id);
 
         document.getElementById("tiendasCompletadas").textContent =
           estadisticas.tiendasCompletadas;
@@ -225,8 +223,8 @@
         }
       }
 
-      function cargarTiendasAsignadas() {
-        const tiendas = getTiendasAsignadasEmpleado(empleadoActual.id);
+      async function cargarTiendasAsignadas() {
+        const tiendas = await getTiendasAsignadasEmpleado();
         const container = document.getElementById("tiendasContainer");
 
         if (tiendas.length === 0) {

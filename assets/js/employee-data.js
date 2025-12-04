@@ -1,4 +1,10 @@
-// employee-data.js - Datos y funcionalidad para empleados con integración al sistema de admin
+// employee-data.js - Capa de datos para empleados (usa Mock API)
+
+/**
+ * Employee Data Service
+ * Capa de abstracción que usa el Mock API Service
+ * En producción, se reemplazarían las llamadas a mockAPI por fetch() reales
+ */
 
 // ============================================
 // OBTENER TIENDAS ASIGNADAS QUE SE DEBEN VISITAR HOY
@@ -6,54 +12,74 @@
 
 /**
  * Obtiene las tiendas que el empleado actual debe visitar HOY
- * basado en la lógica de frecuencia de visitas del adminDataManager
+ * Producción: GET /api/stores/employee/:id/today
  */
-function getTiendasAsignadasEmpleado() {
+async function getTiendasAsignadasEmpleado() {
   const user = getCurrentUser();
   if (!user || user.rol !== "empleado") {
     return [];
   }
 
-  // Usar el adminDataManager para obtener las tiendas que se deben visitar HOY
-  const storesToVisitToday = adminDataManager.getStoresToVisitToday(user.id);
+  try {
+    // Llamar al API mock (en producción sería un fetch real)
+    const response = await mockAPI.getStoresToVisitToday(user.id);
 
-  // Obtener estado de visitas del storage
-  const storage = new Storage();
-  const visitStatus = storage.getItem(`visit_status_${user.id}`) || {};
+    if (!response.success) {
+      console.error("Error al obtener tiendas:", response.error);
+      return [];
+    }
 
-  // Mapear tiendas con estado de completado del día actual
-  const today = new Date().toISOString().split("T")[0];
+    // Obtener estado de visitas del storage local
+    const visitStatus = Storage.get(`visit_status_${user.id}`) || {};
+    const today = new Date().toISOString().split("T")[0];
 
-  return storesToVisitToday.map((store) => ({
-    ...store,
-    qrCode: `QR_${store.id}`, // Generar código QR basado en ID
-    completada:
-      (visitStatus[store.id]?.fecha === today &&
-        visitStatus[store.id]?.completada) ||
-      false,
-    productos: visitStatus[store.id]?.productos || [],
-    fotoEstante: visitStatus[store.id]?.fotoEstante || null,
-    estado:
-      visitStatus[store.id]?.fecha === today &&
-      visitStatus[store.id]?.completada
-        ? "completada"
-        : "pendiente",
-  }));
+    // Agregar información de estado local a las tiendas
+    return response.data.map((store) => ({
+      ...store,
+      qrCode: `QR_${store.id}`,
+      completada:
+        (visitStatus[store.id]?.fecha === today &&
+          visitStatus[store.id]?.completada) ||
+        false,
+      productos: visitStatus[store.id]?.productos || [],
+      fotoEstante: visitStatus[store.id]?.fotoEstante || null,
+      estado:
+        visitStatus[store.id]?.fecha === today &&
+        visitStatus[store.id]?.completada
+          ? "completada"
+          : "pendiente",
+    }));
+  } catch (error) {
+    console.error("Error en getTiendasAsignadasEmpleado:", error);
+    return [];
+  }
 }
 
 // ============================================
 // PRODUCTOS DISPONIBLES PARA SURTIR
 // ============================================
 
-function getProductosSurtir() {
-  // Los productos ahora vienen del adminDataManager
-  return adminDataManager.getAllProducts();
+/**
+ * Obtiene todos los productos disponibles
+ * Producción: GET /api/products?activo=true
+ */
+async function getProductosSurtir() {
+  try {
+    const response = await mockAPI.getProducts({ activo: true });
+    return response.success ? response.data : [];
+  } catch (error) {
+    console.error("Error al obtener productos:", error);
+    return [];
+  }
 }
 
 // ============================================
 // VALIDACIÓN DE QR
 // ============================================
 
+/**
+ * Valida el código QR de una tienda
+ */
 function validarQRTienda(qrCode, tiendaId) {
   const expectedQR = `QR_${tiendaId}`;
   return qrCode === expectedQR;
@@ -63,6 +89,10 @@ function validarQRTienda(qrCode, tiendaId) {
 // GESTIÓN DE VISITAS
 // ============================================
 
+/**
+ * Inicia una visita a una tienda
+ * Guarda el estado localmente
+ */
 function iniciarVisitaTienda(tiendaId, coordenadas) {
   const user = getCurrentUser();
   if (!user || user.rol !== "empleado") {
@@ -70,9 +100,7 @@ function iniciarVisitaTienda(tiendaId, coordenadas) {
   }
 
   const timestamp = new Date().toISOString();
-  const storage = new Storage();
 
-  // Crear registro de visita temporal
   const visitaActual = {
     empleadoId: user.id,
     tiendaId: tiendaId,
@@ -81,13 +109,16 @@ function iniciarVisitaTienda(tiendaId, coordenadas) {
     estado: "en_curso",
   };
 
-  storage.setItem("visitaActual", visitaActual);
+  Storage.set("visitaActual", visitaActual);
   return visitaActual;
 }
 
-function completarVisitaTienda(datosVisita) {
-  const storage = new Storage();
-  const visitaActual = storage.getItem("visitaActual");
+/**
+ * Completa una visita a una tienda
+ * Producción: POST /api/visits
+ */
+async function completarVisitaTienda(datosVisita) {
+  const visitaActual = Storage.get("visitaActual");
 
   if (!visitaActual) return null;
 
@@ -97,9 +128,9 @@ function completarVisitaTienda(datosVisita) {
   const horaFin = new Date(timestamp);
   const duracionMinutos = Math.round((horaFin - horaInicio) / 1000 / 60);
 
-  // Crear pedido completado
+  // Crear registro de visita completada
   const pedidoCompleto = {
-    id: "ped_emp_" + Date.now(),
+    id: "visit_" + Date.now(),
     empleadoId: visitaActual.empleadoId,
     tiendaId: visitaActual.tiendaId,
     fecha: today,
@@ -114,27 +145,31 @@ function completarVisitaTienda(datosVisita) {
     duracionVisita: duracionMinutos,
   };
 
-  // Guardar en historial
-  let historialPedidos = storage.getItem("pedidosEmpleado") || [];
+  // Guardar en historial local
+  let historialPedidos = Storage.get("pedidosEmpleado") || [];
   historialPedidos.push(pedidoCompleto);
-  storage.setItem("pedidosEmpleado", historialPedidos);
+  Storage.set("pedidosEmpleado", historialPedidos);
 
-  // Actualizar estado de visita para este empleado y tienda
+  // Actualizar estado de visita local
   let visitStatus =
-    storage.getItem(`visit_status_${visitaActual.empleadoId}`) || {};
+    Storage.get(`visit_status_${visitaActual.empleadoId}`) || {};
   visitStatus[visitaActual.tiendaId] = {
     fecha: today,
     completada: true,
     productos: datosVisita.productos || [],
     fotoEstante: datosVisita.fotoEstante,
   };
-  storage.setItem(`visit_status_${visitaActual.empleadoId}`, visitStatus);
+  Storage.set(`visit_status_${visitaActual.empleadoId}`, visitStatus);
 
-  // Marcar visita en el adminDataManager
-  adminDataManager.completeVisit(visitaActual.tiendaId);
+  // Actualizar en el API mock (en producción: POST /api/stores/:id/visit)
+  try {
+    await mockAPI.completeVisit(visitaActual.tiendaId);
+  } catch (error) {
+    console.error("Error al registrar visita en API:", error);
+  }
 
   // Limpiar visita actual
-  storage.removeItem("visitaActual");
+  Storage.remove("visitaActual");
 
   return pedidoCompleto;
 }
@@ -143,9 +178,12 @@ function completarVisitaTienda(datosVisita) {
 // HISTORIAL Y ESTADÍSTICAS
 // ============================================
 
+/**
+ * Obtiene el historial de pedidos/visitas del empleado
+ * Producción: GET /api/visits?employeeId=:id
+ */
 function getHistorialPedidosEmpleado(empleadoId, filtros = {}) {
-  const storage = new Storage();
-  let pedidos = storage.getItem("pedidosEmpleado") || [];
+  let pedidos = Storage.get("pedidosEmpleado") || [];
 
   // Filtrar por empleado
   pedidos = pedidos.filter((p) => p.empleadoId === empleadoId);
@@ -159,38 +197,59 @@ function getHistorialPedidosEmpleado(empleadoId, filtros = {}) {
   return pedidos.sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
 }
 
-function getEstadisticasEmpleado(empleadoId) {
-  const storage = new Storage();
-  const historial = getHistorialPedidosEmpleado(empleadoId);
-  const hoy = new Date().toISOString().split("T")[0];
-  const pedidosHoy = historial.filter((p) => p.fecha === hoy);
+/**
+ * Obtiene estadísticas del empleado
+ * Producción: GET /api/stats/employee/:id
+ */
+async function getEstadisticasEmpleado(empleadoId) {
+  try {
+    // Obtener estadísticas del API
+    const response = await mockAPI.getEmployeeStats(empleadoId);
+    const apiStats = response.success ? response.data : {};
 
-  // Obtener tiendas asignadas hoy
-  const tiendasHoy = getTiendasAsignadasEmpleado();
-  const tiendasCompletadas = tiendasHoy.filter((t) => t.completada).length;
-  const tiendasPendientes = tiendasHoy.length - tiendasCompletadas;
+    // Complementar con estadísticas locales
+    const historial = getHistorialPedidosEmpleado(empleadoId);
+    const hoy = new Date().toISOString().split("T")[0];
+    const pedidosHoy = historial.filter((p) => p.fecha === hoy);
 
-  const totalProductosHoy = pedidosHoy.reduce(
-    (sum, p) =>
-      sum + p.productos.reduce((pSum, prod) => pSum + prod.cantidad, 0),
-    0
-  );
+    const totalProductosHoy = pedidosHoy.reduce(
+      (sum, p) =>
+        sum + p.productos.reduce((pSum, prod) => pSum + prod.cantidad, 0),
+      0
+    );
 
-  return {
-    tiendasAsignadas: tiendasHoy.length,
-    tiendasCompletadas: tiendasCompletadas,
-    tiendasPendientes: tiendasPendientes,
-    productosEntregadosHoy: totalProductosHoy,
-    visitasHoy: pedidosHoy.length,
-    promedioTiempoPorVisita:
+    const promedioTiempo =
       pedidosHoy.length > 0
         ? Math.round(
             pedidosHoy.reduce((sum, p) => sum + p.duracionVisita, 0) /
               pedidosHoy.length
           )
-        : 0,
-    rutaCompletada: tiendasPendientes === 0 && tiendasHoy.length > 0,
-  };
+        : 0;
+
+    return {
+      ...apiStats,
+      productosEntregadosHoy: totalProductosHoy,
+      visitasHoy: pedidosHoy.length,
+      promedioTiempoPorVisita: promedioTiempo,
+      tiendasPendientes: apiStats.tiendasAsignadas - pedidosHoy.length,
+      tiendasCompletadas: pedidosHoy.length,
+      rutaCompletada:
+        apiStats.tiendasAsignadas > 0 &&
+        pedidosHoy.length >= apiStats.tiendasVisitarHoy,
+    };
+  } catch (error) {
+    console.error("Error al obtener estadísticas:", error);
+    return {
+      tiendasAsignadas: 0,
+      tiendasVisitarHoy: 0,
+      tiendasCompletadas: 0,
+      tiendasPendientes: 0,
+      productosEntregadosHoy: 0,
+      visitasHoy: 0,
+      promedioTiempoPorVisita: 0,
+      rutaCompletada: false,
+    };
+  }
 }
 
 // ============================================
@@ -202,13 +261,11 @@ function simularEscaneoQR(tiendaId) {
 }
 
 function getVisitaActual() {
-  const storage = new Storage();
-  return storage.getItem("visitaActual");
+  return Storage.get("visitaActual");
 }
 
 function cancelarVisitaActual() {
-  const storage = new Storage();
-  storage.removeItem("visitaActual");
+  Storage.remove("visitaActual");
 }
 
 // ============================================

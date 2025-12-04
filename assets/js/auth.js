@@ -14,15 +14,13 @@ const ADMIN_USER = {
 
 // Inicializar usuarios en localStorage si no existen
 // Los usuarios se sincronizan con los empleados de admin-data.js
-function initDemoUsers() {
-  const storage = new Storage();
-
+async function initDemoUsers() {
   // Siempre incluir usuario admin
   let users = [ADMIN_USER];
 
   // Si existe adminDataManager, sincronizar empleados como usuarios
   if (typeof adminDataManager !== "undefined") {
-    const employees = adminDataManager.getAllEmployees();
+    const employees = await adminDataManager.getAllEmployees();
 
     // Convertir empleados a usuarios con contraseña por defecto
     const employeeUsers = employees.map((emp) => ({
@@ -40,22 +38,21 @@ function initDemoUsers() {
   }
 
   // Guardar usuarios sincronizados
-  if (!storage.getItem("users") || storage.getItem("users").length === 0) {
-    storage.setItem("users", users);
+  if (!Storage.get("users") || Storage.get("users").length === 0) {
+    Storage.set("users", users);
   }
 
   return users;
 }
 
 // Sincronizar usuarios con empleados (llamar cuando se crea/actualiza un empleado)
-function syncUsersWithEmployees() {
+async function syncUsersWithEmployees() {
   if (typeof adminDataManager !== "undefined") {
-    const storage = new Storage();
-    const currentUsers = storage.getItem("users") || [];
+    const currentUsers = Storage.get("users") || [];
     const admin =
       currentUsers.find((u) => u.rol === "administrador") || ADMIN_USER;
 
-    const employees = adminDataManager.getAllEmployees();
+    const employees = await adminDataManager.getAllEmployees();
     const employeeUsers = employees.map((emp) => {
       // Mantener contraseña existente si ya existe el usuario
       const existingUser = currentUsers.find((u) => u.id === emp.id);
@@ -71,7 +68,7 @@ function syncUsersWithEmployees() {
       };
     });
 
-    storage.setItem("users", [admin, ...employeeUsers]);
+    Storage.set("users", [admin, ...employeeUsers]);
   }
 }
 
@@ -149,7 +146,7 @@ async function handleLogin(event) {
     await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Obtener usuarios
-    initDemoUsers();
+    await initDemoUsers();
     const users = Storage.get("users") || [];
     console.log("Usuarios disponibles:", users.length);
 
@@ -284,7 +281,7 @@ async function handleRegister(event) {
     await HTTP.mockAPI(null, 500);
 
     // Obtener usuarios
-    initDemoUsers();
+    await initDemoUsers();
     const users = Storage.get("users") || [];
 
     // Verificar si el email ya existe
@@ -376,7 +373,7 @@ function logout() {
 // Redirigir al dashboard según rol
 function redirectToDashboard(rol) {
   const dashboards = {
-    administrador: "../admin/dashboard.html",
+    administrador: "../admin/empleados-management.html",
     empleado: "../empleado/dashboard.html",
   };
 
@@ -447,8 +444,8 @@ function updateUserInfo() {
 }
 
 // Inicializar en DOMContentLoaded
-document.addEventListener("DOMContentLoaded", () => {
-  initDemoUsers();
+document.addEventListener("DOMContentLoaded", async () => {
+  await initDemoUsers();
 
   // Si estamos en una página protegida, actualizar info del usuario
   if (isAuthenticated()) {

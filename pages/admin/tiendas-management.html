@@ -287,24 +287,27 @@
     </div>
 
     <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/mock-api.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
     <script src="../../assets/js/admin-data.js"></script>
     <script src="../../components/components.js"></script>
 
     <script>
-      // Verificar autenticación
-      checkAuth(["admin"]);
-
       // Variables globales
       let editingStoreId = null;
 
       // Inicializar página
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
+        // Cargar UI primero
         loadSidebarAndHeader();
-        loadStores();
-        loadStats();
-        loadEmployeeFilters();
+
+        // Verificar autenticación
+        protectPage("administrador");
+
+        await loadStores();
+        await loadStats();
+        await loadEmployeeFilters();
 
         // Eventos
         document
@@ -322,33 +325,33 @@
         document.getElementById("sidebarContainer").innerHTML =
           createAdminSidebar();
         document.getElementById("headerContainer").innerHTML =
-          createAdminHeader();
+          createHeader("Gestión de Tiendas");
       }
 
-      function loadEmployeeFilters() {
-        const employees = adminDataManager
-          .getAllEmployees()
-          .filter((emp) => emp.activo);
+      async function loadEmployeeFilters() {
+        const employees = await adminDataManager.getAllEmployees();
+        const activeEmployees = employees.filter((emp) => emp.activo);
         const filterSelect = document.getElementById("filterEmployee");
         const employeeSelect = document.getElementById("storeEmployee");
 
         // Cargar filtro
         filterSelect.innerHTML =
           '<option value="">Todos los empleados</option>' +
-          employees
+          activeEmployees
             .map((emp) => `<option value="${emp.id}">${emp.nombre}</option>`)
             .join("");
 
         // Cargar select de asignación
         employeeSelect.innerHTML =
           '<option value="">Sin asignar</option>' +
-          employees
+          activeEmployees
             .map((emp) => `<option value="${emp.id}">${emp.nombre}</option>`)
             .join("");
       }
 
-      function loadStores() {
-        const stores = adminDataManager.getAllStores();
+      async function loadStores() {
+        const stores = await adminDataManager.getAllStores();
+        const employees = await adminDataManager.getAllEmployees();
         const tbody = document.getElementById("storesTableBody");
 
         if (stores.length === 0) {
@@ -366,7 +369,7 @@
         tbody.innerHTML = stores
           .map((store) => {
             const employee = store.empleadoAsignado
-              ? adminDataManager.getEmployeeById(store.empleadoAsignado)
+              ? employees.find((emp) => emp.id === store.empleadoAsignado)
               : null;
             const nextVisit = adminDataManager.getNextVisitDate(store);
             const shouldVisit = adminDataManager.shouldVisitToday(store);
@@ -444,8 +447,8 @@
           .join("");
       }
 
-      function loadStats() {
-        const stores = adminDataManager.getAllStores();
+      async function loadStats() {
+        const stores = await adminDataManager.getAllStores();
         const activeStores = stores.filter((s) => s.activa);
         const assigned = activeStores.filter((s) => s.empleadoAsignado).length;
         const unassigned = activeStores.filter(
@@ -454,11 +457,13 @@
 
         // Contar visitas de hoy
         let visitsToday = 0;
-        const employees = adminDataManager.getAllEmployees();
-        employees.forEach((emp) => {
-          const storesToVisit = adminDataManager.getStoresToVisitToday(emp.id);
+        const employees = await adminDataManager.getAllEmployees();
+        for (const emp of employees) {
+          const storesToVisit = await adminDataManager.getStoresToVisitToday(
+            emp.id
+          );
           visitsToday += storesToVisit.length;
-        });
+        }
 
         document.getElementById("totalStores").textContent =
           activeStores.length;
@@ -467,13 +472,13 @@
         document.getElementById("visitsTodayCount").textContent = visitsToday;
       }
 
-      function filterStores() {
+      async function filterStores() {
         const searchTerm = document
           .getElementById("searchStore")
           .value.toLowerCase();
         const employeeFilter = document.getElementById("filterEmployee").value;
 
-        let stores = adminDataManager.getAllStores();
+        let stores = await adminDataManager.getAllStores();
 
         // Filtrar por empleado
         if (employeeFilter) {
@@ -493,6 +498,7 @@
         }
 
         const tbody = document.getElementById("storesTableBody");
+        const employees = await adminDataManager.getAllEmployees();
 
         if (stores.length === 0) {
           tbody.innerHTML = `
@@ -509,7 +515,7 @@
         tbody.innerHTML = stores
           .map((store) => {
             const employee = store.empleadoAsignado
-              ? adminDataManager.getEmployeeById(store.empleadoAsignado)
+              ? employees.find((emp) => emp.id === store.empleadoAsignado)
               : null;
             const nextVisit = adminDataManager.getNextVisitDate(store);
             const shouldVisit = adminDataManager.shouldVisitToday(store);
@@ -587,18 +593,18 @@
           .join("");
       }
 
-      function openStoreModal(id = null) {
+      async function openStoreModal(id = null) {
         editingStoreId = id;
         const modal = document.getElementById("storeModal");
         const form = document.getElementById("storeForm");
         const title = document.getElementById("modalTitle");
 
         form.reset();
-        loadEmployeeFilters();
+        await loadEmployeeFilters();
 
         if (id) {
           title.textContent = "Editar Tienda";
-          const store = adminDataManager.getStoreById(id);
+          const store = await adminDataManager.getStoreById(id);
 
           if (store) {
             document.getElementById("storeId").value = store.id;
@@ -623,7 +629,7 @@
         editingStoreId = null;
       }
 
-      function handleStoreSubmit(e) {
+      async function handleStoreSubmit(e) {
         e.preventDefault();
 
         const storeData = {
@@ -639,16 +645,16 @@
 
         try {
           if (editingStoreId) {
-            adminDataManager.updateStore(editingStoreId, storeData);
+            await adminDataManager.updateStore(editingStoreId, storeData);
             showNotification("Tienda actualizada exitosamente", "success");
           } else {
-            adminDataManager.createStore(storeData);
+            await adminDataManager.addStore(storeData);
             showNotification("Tienda creada exitosamente", "success");
           }
 
           closeStoreModal();
-          loadStores();
-          loadStats();
+          await loadStores();
+          await loadStats();
         } catch (error) {
           showNotification("Error al guardar la tienda", "error");
           console.error(error);
@@ -659,20 +665,20 @@
         openStoreModal(id);
       }
 
-      function assignEmployee(storeId) {
-        const store = adminDataManager.getStoreById(storeId);
+      async function assignEmployee(storeId) {
+        const store = await adminDataManager.getStoreById(storeId);
         if (!store) return;
 
-        openStoreModal(storeId);
+        await openStoreModal(storeId);
       }
 
-      function deleteStore(id) {
+      async function deleteStore(id) {
         if (confirm("¿Estás seguro de eliminar esta tienda?")) {
           try {
-            adminDataManager.deleteStore(id);
+            await adminDataManager.deleteStore(id);
             showNotification("Tienda eliminada exitosamente", "success");
-            loadStores();
-            loadStats();
+            await loadStores();
+            await loadStats();
           } catch (error) {
             showNotification("Error al eliminar la tienda", "error");
             console.error(error);
