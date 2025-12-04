@@ -258,6 +258,16 @@ document.addEventListener("click", (e) => {
 
 // Inicialización
 document.addEventListener("DOMContentLoaded", () => {
+  // Inicializar datos de usuarios y sincronizar con empleados
+  if (typeof initDemoUsers === "function") {
+    initDemoUsers();
+  }
+
+  // Sincronizar usuarios con empleados si adminDataManager está disponible
+  if (typeof syncUsersWithEmployees === "function") {
+    syncUsersWithEmployees();
+  }
+
   // Solicitar permisos de notificaciones después de 5 segundos
   setTimeout(requestNotificationPermission, 5000);
 

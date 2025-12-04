@@ -1,300 +1,537 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Gestión de Productos - Admin</title>
-    
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="manifest" href="../../manifest.json">
-    <link rel="stylesheet" href="../../assets/css/styles.css">
-</head>
-<body class="bg-gray-100">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="manifest" href="../../manifest.json" />
+    <link rel="stylesheet" href="../../assets/css/styles.css" />
+  </head>
+  <body class="bg-gray-100">
     <div class="flex min-h-screen">
-        <div id="sidebarContainer"></div>
+      <div id="sidebarContainer"></div>
 
-        <div class="flex-1 flex flex-col">
-            <div id="headerContainer"></div>
+      <div class="flex-1 flex flex-col">
+        <div id="headerContainer"></div>
 
-            <main class="flex-1 p-4 sm:p-6 lg:p-8">
-                <!-- Header con botón agregar -->
-                <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-900">Gestión de Productos</h2>
-                        <p class="text-gray-600 mt-1">Administra el catálogo de productos</p>
-                    </div>
-                    <button onclick="showProductModal()" class="btn-primary px-6 py-3">
-                        <i class="fas fa-plus mr-2"></i> Nuevo Producto
-                    </button>
-                </div>
+        <main class="flex-1 p-4 sm:p-6 lg:p-8">
+          <!-- Header con botón agregar -->
+          <div
+            class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+          >
+            <div>
+              <h2 class="text-2xl font-bold text-gray-900">
+                Gestión de Productos
+              </h2>
+              <p class="text-gray-600 mt-1">
+                Administra el catálogo de productos
+              </p>
+            </div>
+            <button onclick="showProductModal()" class="btn-primary px-6 py-3">
+              <i class="fas fa-plus mr-2"></i> Nuevo Producto
+            </button>
+          </div>
 
-                <!-- Filtros -->
-                <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
-                            <input 
-                                type="text" 
-                                id="searchInput" 
-                                placeholder="Nombre o descripción..." 
-                                class="form-input w-full"
-                                onkeyup="Timing.debounce(filterProducts, 300)()"
-                            >
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
-                            <select id="categoryFilter" class="form-input w-full" onchange="filterProducts()">
-                                <option value="">Todas</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Ordenar por</label>
-                            <select id="sortBy" class="form-input w-full" onchange="filterProducts()">
-                                <option value="nombre-asc">Nombre A-Z</option>
-                                <option value="nombre-desc">Nombre Z-A</option>
-                                <option value="precio-asc">Precio Menor</option>
-                                <option value="precio-desc">Precio Mayor</option>
-                            </select>
-                        </div>
-                        <div class="flex items-end">
-                            <button onclick="clearFilters()" class="btn-secondary w-full py-2.5">
-                                <i class="fas fa-redo mr-2"></i> Limpiar Filtros
-                            </button>
-                        </div>
-                    </div>
-                </div>
+          <!-- Filtros -->
+          <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Buscar</label
+                >
+                <input
+                  type="text"
+                  id="searchInput"
+                  placeholder="Nombre o descripción..."
+                  class="form-input w-full"
+                  onkeyup="Timing.debounce(filterProducts, 300)()"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Categoría</label
+                >
+                <select
+                  id="categoryFilter"
+                  class="form-input w-full"
+                  onchange="filterProducts()"
+                >
+                  <option value="">Todas</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >Ordenar por</label
+                >
+                <select
+                  id="sortBy"
+                  class="form-input w-full"
+                  onchange="filterProducts()"
+                >
+                  <option value="nombre-asc">Nombre A-Z</option>
+                  <option value="nombre-desc">Nombre Z-A</option>
+                  <option value="precio-asc">Precio Menor</option>
+                  <option value="precio-desc">Precio Mayor</option>
+                </select>
+              </div>
+              <div class="flex items-end">
+                <button
+                  onclick="clearFilters()"
+                  class="btn-secondary w-full py-2.5"
+                >
+                  <i class="fas fa-redo mr-2"></i> Limpiar Filtros
+                </button>
+              </div>
+            </div>
+          </div>
 
-                <!-- Tabla de productos -->
-                <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Precio</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estado</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="productsTableBody" class="bg-white divide-y divide-gray-200">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </main>
-        </div>
+          <!-- Tabla de productos -->
+          <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      ID
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Producto
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Categoría
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Precio
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Stock
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Estado
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"
+                    >
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="productsTableBody"
+                  class="bg-white divide-y divide-gray-200"
+                ></tbody>
+              </table>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
 
     <!-- Modal Producto -->
-    <div id="productModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div class="p-6 border-b">
-                <h3 id="modalTitle" class="text-xl font-bold">Nuevo Producto</h3>
-            </div>
-            <form id="productForm" class="p-6 space-y-4">
-                <input type="hidden" id="productId">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
-                        <input type="text" id="nombre" required class="form-input w-full">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Categoría *</label>
-                        <select id="categoria" required class="form-input w-full"></select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Descripción *</label>
-                    <textarea id="descripcion" required rows="3" class="form-input w-full"></textarea>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Precio *</label>
-                        <input type="number" id="precio" required step="0.01" min="0" class="form-input w-full">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Stock *</label>
-                        <input type="number" id="stock" required min="0" class="form-input w-full">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">URL de Imagen</label>
-                    <input type="url" id="imagen" class="form-input w-full" placeholder="https://...">
-                </div>
-
-                <div class="flex items-center">
-                    <input type="checkbox" id="activo" checked class="h-4 w-4 text-indigo-600 rounded">
-                    <label for="activo" class="ml-2 text-sm text-gray-700">Producto activo</label>
-                </div>
-
-                <div class="flex justify-end space-x-3 pt-4 border-t">
-                    <button type="button" onclick="closeProductModal()" class="px-6 py-2 border rounded-md hover:bg-gray-50">
-                        Cancelar
-                    </button>
-                    <button type="submit" class="btn-primary px-6 py-2">
-                        <i class="fas fa-save mr-2"></i> Guardar
-                    </button>
-                </div>
-            </form>
+    <div
+      id="productModal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+      >
+        <div class="p-6 border-b">
+          <h3 id="modalTitle" class="text-xl font-bold">Nuevo Producto</h3>
         </div>
+        <form id="productForm" class="p-6 space-y-4">
+          <input type="hidden" id="productId" />
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Nombre *</label
+              >
+              <input
+                type="text"
+                id="nombre"
+                required
+                class="form-input w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Categoría *</label
+              >
+              <select
+                id="categoria"
+                required
+                class="form-input w-full"
+              ></select>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >Descripción *</label
+            >
+            <textarea
+              id="descripcion"
+              required
+              rows="3"
+              class="form-input w-full"
+            ></textarea>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Precio *</label
+              >
+              <input
+                type="number"
+                id="precio"
+                required
+                step="0.01"
+                min="0"
+                class="form-input w-full"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Stock *</label
+              >
+              <input
+                type="number"
+                id="stock"
+                required
+                min="0"
+                class="form-input w-full"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2"
+              >URL de Imagen</label
+            >
+            <input
+              type="url"
+              id="imagen"
+              class="form-input w-full"
+              placeholder="https://..."
+            />
+          </div>
+
+          <div class="flex items-center">
+            <input
+              type="checkbox"
+              id="activo"
+              checked
+              class="h-4 w-4 text-indigo-600 rounded"
+            />
+            <label for="activo" class="ml-2 text-sm text-gray-700"
+              >Producto activo</label
+            >
+          </div>
+
+          <div class="flex justify-end space-x-3 pt-4 border-t">
+            <button
+              type="button"
+              onclick="closeProductModal()"
+              class="px-6 py-2 border rounded-md hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary px-6 py-2">
+              <i class="fas fa-save mr-2"></i> Guardar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <script src="../../assets/js/utils.js"></script>
     <script src="../../assets/js/app.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/data.js"></script>
+    <script src="../../assets/js/admin-data.js"></script>
     <script src="../../components/components.js"></script>
     <script>
-        protectPage('administrador');
-        document.getElementById('sidebarContainer').innerHTML = createAdminSidebar();
-        document.getElementById('headerContainer').innerHTML = createHeader('Gestión de Productos');
+      protectPage("administrador");
+      document.getElementById("sidebarContainer").innerHTML =
+        createAdminSidebar();
+      document.getElementById("headerContainer").innerHTML = createHeader(
+        "Gestión de Productos"
+      );
 
-        // Cargar categorías
-        function loadCategories() {
-            const categoryFilter = document.getElementById('categoryFilter');
-            const categoriaSelect = document.getElementById('categoria');
-            
-            CATEGORIES.forEach(cat => {
-                categoryFilter.innerHTML += `<option value="${cat}">${cat}</option>`;
-                categoriaSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
-            });
+      // Cargar categorías
+      function loadCategories() {
+        const categoryFilter = document.getElementById("categoryFilter");
+        const categoriaSelect = document.getElementById("categoria");
+
+        // Obtener categorías únicas de los productos existentes
+        const productos = adminDataManager.getAllProducts();
+        const uniqueCategories = [
+          ...new Set(productos.map((p) => p.categoria)),
+        ].sort();
+
+        uniqueCategories.forEach((cat) => {
+          categoryFilter.innerHTML += `<option value="${cat}">${cat}</option>`;
+          categoriaSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+        });
+
+        // Agregar categorías predefinidas que no estén en productos
+        const predefinedCats = [
+          "Bebidas",
+          "Botanas",
+          "Lácteos",
+          "Panadería",
+          "Galletas",
+          "Frescos",
+          "Aceites",
+          "Granos",
+          "Limpieza",
+          "Higiene",
+          "Otros",
+        ];
+        predefinedCats.forEach((cat) => {
+          if (!uniqueCategories.includes(cat)) {
+            categoriaSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+          }
+        });
+      }
+
+      // Cargar productos
+      function loadProducts() {
+        const search = document
+          .getElementById("searchInput")
+          .value.toLowerCase();
+        const categoria = document.getElementById("categoryFilter").value;
+        const sortBy = document.getElementById("sortBy").value;
+
+        let products = adminDataManager.getAllProducts();
+
+        // Filtrar por búsqueda
+        if (search) {
+          products = products.filter(
+            (p) =>
+              p.nombre.toLowerCase().includes(search) ||
+              p.categoria.toLowerCase().includes(search) ||
+              (p.codigoBarras && p.codigoBarras.includes(search))
+          );
         }
 
-        // Cargar productos
-        function loadProducts() {
-            const search = document.getElementById('searchInput').value;
-            const categoria = document.getElementById('categoryFilter').value;
-            const sortBy = document.getElementById('sortBy').value;
-            
-            const products = getProducts({ search, categoria, sortBy });
-            const tbody = document.getElementById('productsTableBody');
-            
-            tbody.innerHTML = products.map(product => `
+        // Filtrar por categoría
+        if (categoria) {
+          products = products.filter((p) => p.categoria === categoria);
+        }
+
+        // Ordenar
+        if (sortBy === "nombre") {
+          products.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        } else if (sortBy === "precio-asc") {
+          products.sort((a, b) => a.precioSugerido - b.precioSugerido);
+        } else if (sortBy === "precio-desc") {
+          products.sort((a, b) => b.precioSugerido - a.precioSugerido);
+        } else if (sortBy === "categoria") {
+          products.sort((a, b) => a.categoria.localeCompare(b.categoria));
+        }
+
+        const tbody = document.getElementById("productsTableBody");
+
+        if (products.length === 0) {
+          tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-2"></i>
+                            <p>No se encontraron productos</p>
+                        </td>
+                    </tr>
+                `;
+          return;
+        }
+
+        tbody.innerHTML = products
+          .map(
+            (product) => `
                 <tr>
-                    <td class="px-6 py-4 text-sm text-gray-900">${product.id}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900"><strong>${
+                      product.id
+                    }</strong></td>
                     <td class="px-6 py-4">
                         <div class="flex items-center">
-                            <img src="${product.imagen}" alt="${product.nombre}" class="h-10 w-10 rounded object-cover mr-3">
+                            <div class="h-10 w-10 rounded bg-gray-200 flex items-center justify-center mr-3">
+                                <i class="fas fa-box text-gray-400"></i>
+                            </div>
                             <div>
-                                <div class="text-sm font-medium text-gray-900">${product.nombre}</div>
-                                <div class="text-sm text-gray-500">${Format.truncate(product.descripcion, 40)}</div>
+                                <div class="text-sm font-medium text-gray-900">${
+                                  product.nombre
+                                }</div>
+                                <div class="text-sm text-gray-500">${
+                                  product.categoria
+                                }</div>
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-900">${product.categoria}</td>
-                    <td class="px-6 py-4 text-sm font-semibold text-gray-900">${Format.currency(product.precio)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">${
+                      product.categoria
+                    }</td>
+                    <td class="px-6 py-4 text-sm font-semibold text-gray-900">${Format.currency(
+                      product.precioSugerido
+                    )}</td>
                     <td class="px-6 py-4 text-sm">
-                        <span class="badge ${product.stock < 10 ? 'badge-danger' : 'badge-success'}">
-                            ${product.stock} unidades
+                        <span class="badge badge-success">
+                            ${product.unidad}
                         </span>
                     </td>
                     <td class="px-6 py-4 text-sm">
-                        <span class="badge ${product.activo ? 'badge-success' : 'badge-danger'}">
-                            ${product.activo ? 'Activo' : 'Inactivo'}
-                        </span>
+                        <code class="text-xs">${
+                          product.codigoBarras || "N/A"
+                        }</code>
                     </td>
                     <td class="px-6 py-4 text-sm space-x-2">
-                        <button onclick="editProduct(${product.id})" class="text-blue-600 hover:text-blue-900">
+                        <button onclick="editProduct(${
+                          product.id
+                        })" class="text-blue-600 hover:text-blue-900">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="deleteProductConfirm(${product.id})" class="text-red-600 hover:text-red-900">
+                        <button onclick="deleteProductConfirm(${
+                          product.id
+                        })" class="text-red-600 hover:text-red-900">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
                 </tr>
-            `).join('');
-        }
+            `
+          )
+          .join("");
+      }
 
-        function filterProducts() {
+      function filterProducts() {
+        loadProducts();
+      }
+
+      function clearFilters() {
+        document.getElementById("searchInput").value = "";
+        document.getElementById("categoryFilter").value = "";
+        document.getElementById("sortBy").value = "nombre-asc";
+        loadProducts();
+      }
+
+      function showProductModal(productId = null) {
+        document.getElementById("productModal").classList.remove("hidden");
+        document.getElementById("modalTitle").textContent = productId
+          ? "Editar Producto"
+          : "Nuevo Producto";
+
+        if (productId) {
+          const product = adminDataManager
+            .getAllProducts()
+            .find((p) => p.id === productId);
+          if (product) {
+            document.getElementById("productId").value = product.id;
+            document.getElementById("nombre").value = product.nombre;
+            document.getElementById("categoria").value = product.categoria;
+            document.getElementById("descripcion").value =
+              product.descripcion || "";
+            document.getElementById("precio").value = product.precioSugerido;
+            document.getElementById("stock").value = 0; // stock no se usa en admin-data
+            document.getElementById("imagen").value = "";
+            document.getElementById("activo").checked = true;
+          }
+        } else {
+          document.getElementById("productForm").reset();
+          document.getElementById("productId").value = "";
+        }
+      }
+
+      function closeProductModal() {
+        document.getElementById("productModal").classList.add("hidden");
+        document.getElementById("productForm").reset();
+      }
+
+      function editProduct(id) {
+        showProductModal(id);
+      }
+
+      function deleteProductConfirm(id) {
+        const product = adminDataManager
+          .getAllProducts()
+          .find((p) => p.id === id);
+        if (!product) return;
+
+        confirmAction(`¿Eliminar "${product.nombre}"?`, () => {
+          try {
+            adminDataManager.deleteProduct(id);
+            showNotification("Producto eliminado", "success");
             loadProducts();
-        }
-
-        function clearFilters() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('categoryFilter').value = '';
-            document.getElementById('sortBy').value = 'nombre-asc';
-            loadProducts();
-        }
-
-        function showProductModal(productId = null) {
-            document.getElementById('productModal').classList.remove('hidden');
-            document.getElementById('modalTitle').textContent = productId ? 'Editar Producto' : 'Nuevo Producto';
-            
-            if (productId) {
-                const product = getProductById(productId);
-                if (product) {
-                    document.getElementById('productId').value = product.id;
-                    document.getElementById('nombre').value = product.nombre;
-                    document.getElementById('categoria').value = product.categoria;
-                    document.getElementById('descripcion').value = product.descripcion;
-                    document.getElementById('precio').value = product.precio;
-                    document.getElementById('stock').value = product.stock;
-                    document.getElementById('imagen').value = product.imagen;
-                    document.getElementById('activo').checked = product.activo;
-                }
-            } else {
-                document.getElementById('productForm').reset();
-                document.getElementById('productId').value = '';
-            }
-        }
-
-        function closeProductModal() {
-            document.getElementById('productModal').classList.add('hidden');
-            document.getElementById('productForm').reset();
-        }
-
-        function editProduct(id) {
-            showProductModal(id);
-        }
-
-        function deleteProductConfirm(id) {
-            const product = getProductById(id);
-            confirmAction(`¿Eliminar "${product.nombre}"?`, () => {
-                deleteProduct(id);
-                showNotification('Producto eliminado', 'success');
-                loadProducts();
-            });
-        }
-
-        document.getElementById('productForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const productData = {
-                id: document.getElementById('productId').value ? parseInt(document.getElementById('productId').value) : null,
-                nombre: document.getElementById('nombre').value,
-                categoria: document.getElementById('categoria').value,
-                descripcion: document.getElementById('descripcion').value,
-                precio: parseFloat(document.getElementById('precio').value),
-                stock: parseInt(document.getElementById('stock').value),
-                imagen: document.getElementById('imagen').value || 'https://via.placeholder.com/300x300?text=Producto',
-                activo: document.getElementById('activo').checked
-            };
-            
-            saveProduct(productData);
-            showNotification(productData.id ? 'Producto actualizado' : 'Producto creado', 'success');
-            closeProductModal();
-            loadProducts();
+            loadCategories(); // Recargar categorías por si cambió
+          } catch (error) {
+            showNotification("Error al eliminar: " + error.message, "error");
+          }
         });
+      }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCategories();
-            loadProducts();
-        });
+      document.getElementById("productForm").addEventListener("submit", (e) => {
+        e.preventDefault();
 
-        window.editProduct = editProduct;
-        window.deleteProductConfirm = deleteProductConfirm;
-        window.showProductModal = showProductModal;
-        window.closeProductModal = closeProductModal;
-        window.filterProducts = filterProducts;
-        window.clearFilters = clearFilters;
+        const productId = document.getElementById("productId").value;
+        const productData = {
+          nombre: document.getElementById("nombre").value.trim(),
+          categoria: document.getElementById("categoria").value,
+          descripcion: document.getElementById("descripcion").value.trim(),
+          precioSugerido: parseFloat(document.getElementById("precio").value),
+          unidad: "pieza", // Por ahora default, se puede agregar campo después
+          codigoBarras: "", // Se puede agregar campo después
+        };
+
+        try {
+          if (productId) {
+            adminDataManager.updateProduct(productId, productData);
+            showNotification("Producto actualizado", "success");
+          } else {
+            adminDataManager.addProduct(productData);
+            showNotification("Producto creado", "success");
+          }
+          closeProductModal();
+          loadProducts();
+          loadCategories(); // Recargar categorías por si cambió
+        } catch (error) {
+          showNotification("Error: " + error.message, "error");
+        }
+      });
+
+      function clearFilters() {
+        document.getElementById("searchInput").value = "";
+        document.getElementById("categoryFilter").value = "";
+        document.getElementById("sortBy").value = "nombre";
+        loadProducts();
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        loadCategories();
+        loadProducts();
+      });
+
+      window.editProduct = editProduct;
+      window.deleteProductConfirm = deleteProductConfirm;
+      window.showProductModal = showProductModal;
+      window.closeProductModal = closeProductModal;
+      window.filterProducts = filterProducts;
+      window.clearFilters = clearFilters;
     </script>
-</body>
+  </body>
 </html>

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gestión de Empleados - Admin</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link rel="manifest" href="../../manifest.json" />
+    <link rel="stylesheet" href="../../assets/css/styles.css" />
+  </head>
+  <body class="bg-gray-100">
+    <div class="flex h-screen overflow-hidden">
+      <!-- Sidebar -->
+      <div id="sidebarContainer"></div>
+
+      <!-- Main Content -->
+      <div class="flex-1 flex flex-col overflow-hidden">
+        <!-- Header -->
+        <div id="headerContainer"></div>
+
+        <!-- Content -->
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+          <div class="max-w-7xl mx-auto">
+            <!-- Page Header -->
+            <div class="mb-6 flex justify-between items-center">
+              <div>
+                <h1 class="text-3xl font-bold text-gray-900">
+                  Gestión de Empleados
+                </h1>
+                <p class="text-gray-600 mt-1">
+                  Administra el personal de la empresa
+                </p>
+              </div>
+              <button
+                onclick="openEmployeeModal()"
+                class="btn-primary flex items-center"
+              >
+                <i class="fas fa-plus mr-2"></i>
+                Nuevo Empleado
+              </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-gray-100 text-gray-700">
+                    <i class="fas fa-users text-2xl"></i>
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm text-gray-600">Total Empleados</p>
+                    <p id="totalEmployees" class="text-2xl font-bold">0</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-green-100 text-green-700">
+                    <i class="fas fa-check-circle text-2xl"></i>
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm text-gray-600">Activos</p>
+                    <p id="activeEmployees" class="text-2xl font-bold">0</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center">
+                  <div class="p-3 rounded-full bg-red-100 text-red-700">
+                    <i class="fas fa-user-times text-2xl"></i>
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm text-gray-600">Inactivos</p>
+                    <p id="inactiveEmployees" class="text-2xl font-bold">0</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Employees Table -->
+            <div class="bg-white rounded-lg shadow">
+              <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                  <h2 class="text-xl font-semibold text-gray-900">
+                    Lista de Empleados
+                  </h2>
+                  <div class="flex space-x-2">
+                    <input
+                      type="text"
+                      id="searchEmployee"
+                      placeholder="Buscar empleado..."
+                      class="form-input w-64"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        ID
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Nombre
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Email
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Teléfono
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Fecha Contratación
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Estado
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Acciones
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="employeesTableBody"
+                    class="bg-white divide-y divide-gray-200"
+                  >
+                    <!-- Se llenará dinámicamente -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+
+    <!-- Modal Empleado -->
+    <div
+      id="employeeModal"
+      class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+    >
+      <div
+        class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+      >
+        <div class="p-6 border-b border-gray-200">
+          <div class="flex justify-between items-center">
+            <h3 id="modalTitle" class="text-2xl font-bold text-gray-900">
+              Nuevo Empleado
+            </h3>
+            <button
+              onclick="closeEmployeeModal()"
+              class="text-gray-400 hover:text-gray-600"
+            >
+              <i class="fas fa-times text-2xl"></i>
+            </button>
+          </div>
+        </div>
+
+        <form id="employeeForm" class="p-6">
+          <input type="hidden" id="employeeId" />
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Nombre Completo *</label
+              >
+              <input
+                type="text"
+                id="employeeName"
+                required
+                class="form-input"
+                placeholder="Ej: Carlos Mendoza"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Email *</label
+              >
+              <input
+                type="email"
+                id="employeeEmail"
+                required
+                class="form-input"
+                placeholder="ejemplo@empresa.com"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Teléfono *</label
+              >
+              <input
+                type="tel"
+                id="employeePhone"
+                required
+                class="form-input"
+                placeholder="5551234567"
+              />
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Contraseña *</label
+              >
+              <input
+                type="password"
+                id="employeePassword"
+                class="form-input"
+                placeholder="Mínimo 6 caracteres"
+              />
+              <small class="text-gray-500 text-xs"
+                >Dejar vacío para mantener la actual (solo en edición)</small
+              >
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Estado</label
+              >
+              <select id="employeeActive" class="form-input">
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mt-6 flex justify-end space-x-3">
+            <button
+              type="button"
+              onclick="closeEmployeeModal()"
+              class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn-primary">
+              <i class="fas fa-save mr-2"></i>
+              Guardar
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/auth.js"></script>
+    <script src="../../assets/js/app.js"></script>
+    <script src="../../assets/js/admin-data.js"></script>
+    <script src="../../components/components.js"></script>
+
+    <script>
+      // Verificar autenticación
+      checkAuth(["admin"]);
+
+      // Variables globales
+      let editingEmployeeId = null;
+
+      // Inicializar página
+      document.addEventListener("DOMContentLoaded", () => {
+        loadSidebarAndHeader();
+        loadEmployees();
+        loadStats();
+
+        // Evento de búsqueda
+        document
+          .getElementById("searchEmployee")
+          .addEventListener("input", filterEmployees);
+
+        // Evento de formulario
+        document
+          .getElementById("employeeForm")
+          .addEventListener("submit", handleEmployeeSubmit);
+      });
+
+      function loadSidebarAndHeader() {
+        document.getElementById("sidebarContainer").innerHTML =
+          createAdminSidebar();
+        document.getElementById("headerContainer").innerHTML =
+          createAdminHeader();
+      }
+
+      function loadEmployees() {
+        const employees = adminDataManager.getAllEmployees();
+        const tbody = document.getElementById("employeesTableBody");
+
+        if (employees.length === 0) {
+          tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-users text-4xl mb-2"></i>
+                            <p>No hay empleados registrados</p>
+                        </td>
+                    </tr>
+                `;
+          return;
+        }
+
+        tbody.innerHTML = employees
+          .map(
+            (emp) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
+                      emp.id
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 flex-shrink-0">
+                                <div class="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold">
+                                    ${emp.nombre.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${
+                                  emp.nombre
+                                }</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      emp.email
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      emp.telefono
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(
+                      emp.fechaContratacion
+                    )}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="badge ${
+                          emp.activo ? "badge-success" : "badge-danger"
+                        }">
+                            ${emp.activo ? "Activo" : "Inactivo"}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button onclick="editEmployee('${
+                          emp.id
+                        }')" class="text-gray-600 hover:text-gray-900">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteEmployee('${
+                          emp.id
+                        }')" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      function loadStats() {
+        const employees = adminDataManager.getAllEmployees();
+        const active = employees.filter((emp) => emp.activo).length;
+        const inactive = employees.filter((emp) => !emp.activo).length;
+
+        document.getElementById("totalEmployees").textContent =
+          employees.length;
+        document.getElementById("activeEmployees").textContent = active;
+        document.getElementById("inactiveEmployees").textContent = inactive;
+      }
+
+      function filterEmployees() {
+        const searchTerm = document
+          .getElementById("searchEmployee")
+          .value.toLowerCase();
+        const employees = adminDataManager.getAllEmployees();
+
+        const filtered = employees.filter(
+          (emp) =>
+            emp.nombre.toLowerCase().includes(searchTerm) ||
+            emp.email.toLowerCase().includes(searchTerm) ||
+            emp.id.toLowerCase().includes(searchTerm)
+        );
+
+        const tbody = document.getElementById("employeesTableBody");
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            <i class="fas fa-search text-4xl mb-2"></i>
+                            <p>No se encontraron empleados</p>
+                        </td>
+                    </tr>
+                `;
+          return;
+        }
+
+        tbody.innerHTML = filtered
+          .map(
+            (emp) => `
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
+                      emp.id
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold">
+                                ${emp.nombre.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${
+                                  emp.nombre
+                                }</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      emp.email
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${
+                      emp.telefono
+                    }</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(
+                      emp.fechaContratacion
+                    )}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="badge ${
+                          emp.activo ? "badge-success" : "badge-danger"
+                        }">
+                            ${emp.activo ? "Activo" : "Inactivo"}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                        <button onclick="editEmployee('${
+                          emp.id
+                        }')" class="text-gray-600 hover:text-gray-900">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button onclick="deleteEmployee('${
+                          emp.id
+                        }')" class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      function openEmployeeModal(id = null) {
+        editingEmployeeId = id;
+        const modal = document.getElementById("employeeModal");
+        const form = document.getElementById("employeeForm");
+        const title = document.getElementById("modalTitle");
+
+        form.reset();
+
+        if (id) {
+          title.textContent = "Editar Empleado";
+          const employee = adminDataManager.getEmployeeById(id);
+
+          if (employee) {
+            document.getElementById("employeeId").value = employee.id;
+            document.getElementById("employeeName").value = employee.nombre;
+            document.getElementById("employeeEmail").value = employee.email;
+            document.getElementById("employeePhone").value = employee.telefono;
+            document.getElementById("employeeActive").value =
+              employee.activo.toString();
+            document.getElementById("employeePassword").placeholder =
+              "Dejar vacío para mantener contraseña actual";
+            document
+              .getElementById("employeePassword")
+              .removeAttribute("required");
+          }
+        } else {
+          title.textContent = "Nuevo Empleado";
+          document
+            .getElementById("employeePassword")
+            .setAttribute("required", "required");
+          document.getElementById("employeePassword").placeholder =
+            "Mínimo 6 caracteres";
+        }
+
+        modal.classList.remove("hidden");
+      }
+
+      function closeEmployeeModal() {
+        document.getElementById("employeeModal").classList.add("hidden");
+        editingEmployeeId = null;
+      }
+
+      function handleEmployeeSubmit(e) {
+        e.preventDefault();
+
+        const employeeData = {
+          nombre: document.getElementById("employeeName").value.trim(),
+          email: document.getElementById("employeeEmail").value.trim(),
+          telefono: document.getElementById("employeePhone").value.trim(),
+          activo: document.getElementById("employeeActive").value === "true",
+        };
+
+        const password = document.getElementById("employeePassword").value;
+        if (password && password.length >= 6) {
+          employeeData.password = password;
+        } else if (!editingEmployeeId && !password) {
+          showNotification(
+            "La contraseña es requerida para nuevos empleados",
+            "error"
+          );
+          return;
+        }
+
+        try {
+          if (editingEmployeeId) {
+            adminDataManager.updateEmployee(editingEmployeeId, employeeData);
+            showNotification("Empleado actualizado exitosamente", "success");
+          } else {
+            adminDataManager.createEmployee(employeeData);
+            showNotification("Empleado creado exitosamente", "success");
+          }
+
+          closeEmployeeModal();
+          loadEmployees();
+          loadStats();
+        } catch (error) {
+          showNotification("Error al guardar el empleado", "error");
+          console.error(error);
+        }
+      }
+
+      function editEmployee(id) {
+        openEmployeeModal(id);
+      }
+
+      function deleteEmployee(id) {
+        if (
+          confirm(
+            "¿Estás seguro de eliminar este empleado? Se desasignará de todas sus tiendas."
+          )
+        ) {
+          try {
+            adminDataManager.deleteEmployee(id);
+            showNotification("Empleado eliminado exitosamente", "success");
+            loadEmployees();
+            loadStats();
+          } catch (error) {
+            showNotification("Error al eliminar el empleado", "error");
+            console.error(error);
+          }
+        }
+      }
+
+      function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString("es-MX", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      }
+    </script>
+  </body>
+</html>

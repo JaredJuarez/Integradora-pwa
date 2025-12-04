@@ -1,47 +1,77 @@
 // auth.js - Gestión de autenticación
 
-// Usuarios de demostración
-const DEMO_USERS = [
-  {
-    id: 1,
-    nombre: "Administrador Sistema",
-    email: "admin@empresa.com",
-    password: "Admin123",
-    rol: "administrador",
-    telefono: "7771234567",
-    activo: true,
-    fechaRegistro: "2025-01-01",
-  },
-  {
-    id: 3,
-    nombre: "Carlos Mendoza",
-    email: "empleado@empresa.com",
-    password: "Empleado123",
-    rol: "empleado",
-    telefono: "7771234569",
-    activo: true,
-    fechaRegistro: "2025-01-03",
-    zona: "Centro",
-    vehiculo: "Camioneta ABC-123",
-  },
-  {
-    id: 4,
-    nombre: "María González",
-    email: "maria.gonzalez@empresa.com",
-    password: "Empleado123",
-    rol: "empleado",
-    telefono: "7771234570",
-    activo: true,
-    fechaRegistro: "2025-01-04",
-    zona: "Norte",
-    vehiculo: "Camioneta DEF-456",
-  },
-];
+// Usuario administrador por defecto
+const ADMIN_USER = {
+  id: "ADMIN001",
+  nombre: "Administrador Sistema",
+  email: "admin@empresa.com",
+  password: "Admin123",
+  rol: "administrador",
+  telefono: "7771234567",
+  activo: true,
+  fechaRegistro: "2025-01-01",
+};
 
 // Inicializar usuarios en localStorage si no existen
+// Los usuarios se sincronizan con los empleados de admin-data.js
 function initDemoUsers() {
-  if (!Storage.get("users")) {
-    Storage.set("users", DEMO_USERS);
+  const storage = new Storage();
+
+  // Siempre incluir usuario admin
+  let users = [ADMIN_USER];
+
+  // Si existe adminDataManager, sincronizar empleados como usuarios
+  if (typeof adminDataManager !== "undefined") {
+    const employees = adminDataManager.getAllEmployees();
+
+    // Convertir empleados a usuarios con contraseña por defecto
+    const employeeUsers = employees.map((emp) => ({
+      id: emp.id,
+      nombre: emp.nombre,
+      email: emp.email,
+      password: "Empleado123", // Contraseña por defecto
+      rol: "empleado",
+      telefono: emp.telefono,
+      activo: emp.activo,
+      fechaRegistro: emp.fechaRegistro,
+    }));
+
+    users = [...users, ...employeeUsers];
+  }
+
+  // Guardar usuarios sincronizados
+  if (!storage.getItem("users") || storage.getItem("users").length === 0) {
+    storage.setItem("users", users);
+  }
+
+  return users;
+}
+
+// Sincronizar usuarios con empleados (llamar cuando se crea/actualiza un empleado)
+function syncUsersWithEmployees() {
+  if (typeof adminDataManager !== "undefined") {
+    const storage = new Storage();
+    const currentUsers = storage.getItem("users") || [];
+    const admin =
+      currentUsers.find((u) => u.rol === "administrador") || ADMIN_USER;
+
+    const employees = adminDataManager.getAllEmployees();
+    const employeeUsers = employees.map((emp) => {
+      // Mantener contraseña existente si ya existe el usuario
+      const existingUser = currentUsers.find((u) => u.id === emp.id);
+      return {
+        id: emp.id,
+        nombre: emp.nombre,
+        email: emp.email,
+        password: existingUser ? existingUser.password : "Empleado123",
+        rol: "empleado",
+        telefono: emp.telefono,
+        activo: emp.activo,
+        fechaRegistro: emp.fechaRegistro,
+      };
+    });
+
+    storage.setItem("users", [admin, ...employeeUsers]);
   }
 }
 
