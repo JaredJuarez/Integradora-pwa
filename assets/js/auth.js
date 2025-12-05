@@ -142,64 +142,66 @@ async function handleLogin(event) {
       showLoader();
     }
 
-    // Simular delay de API
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    // Hacer petición a la API
+    const response = await apiFetch(API_CONFIG.ENDPOINTS.LOGIN, {
+      method: "POST",
+      body: JSON.stringify({
+        email: email,
+        password: password,
+      }),
+    });
 
-    // Obtener usuarios
-    await initDemoUsers();
-    const users = Storage.get("users") || [];
-    console.log("Usuarios disponibles:", users.length);
+    const result = await response.json();
 
-    // Buscar usuario
-    const user = users.find(
-      (u) => u.email === email && u.password === password
-    );
+    if (typeof hideLoader === "function") hideLoader();
 
-    if (!user) {
-      if (typeof hideLoader === "function") hideLoader();
-      console.log("Usuario no encontrado");
-      showNotificationSafe("Credenciales incorrectas", "error");
+    // Verificar si hubo error
+    if (result.error || !response.ok) {
+      console.log("Error en login:", result.message);
+      showNotificationSafe(
+        result.message || "Credenciales incorrectas",
+        "error"
+      );
       return;
     }
 
-    console.log("Usuario encontrado:", user.nombre);
+    console.log("Login exitoso:", result.data);
 
-    if (!user.activo) {
-      if (typeof hideLoader === "function") hideLoader();
-      showNotificationSafe("Usuario inactivo", "error");
-      return;
-    }
-
-    // Crear sesión
-    const token = Date.now().toString(36) + Math.random().toString(36);
+    // Crear sesión con los datos de la respuesta
     const session = {
       user: {
-        id: user.id,
-        nombre: user.nombre,
-        email: user.email,
-        rol: user.rol,
-        telefono: user.telefono,
+        email: email,
+        rol: result.data.role.toLowerCase(), // EMPLOYEE -> employee, ADMIN -> admin
       },
-      token: token,
+      token: result.data.token,
       remember: remember,
       loginTime: new Date().toISOString(),
     };
 
+    // Mapear roles de la API a roles del sistema
+    if (result.data.role === "EMPLOYEE") {
+      session.user.rol = "empleado";
+    } else if (result.data.role === "ADMIN") {
+      session.user.rol = "administrador";
+    }
+
     Storage.set("session", session);
     console.log("Sesión creada exitosamente");
 
-    if (typeof hideLoader === "function") hideLoader();
-    showNotificationSafe(`¡Bienvenido ${user.nombre}!`, "success");
+    showNotificationSafe(`¡Bienvenido!`, "success");
 
     // Redirigir según el rol
-    console.log("Redirigiendo a dashboard...", user.rol);
+    console.log("Redirigiendo a dashboard...", session.user.rol);
     setTimeout(() => {
-      redirectToDashboard(user.rol);
+      redirectToDashboard(session.user.rol);
     }, 1000);
   } catch (error) {
     if (typeof hideLoader === "function") hideLoader();
     console.error("Error en login:", error);
-    showNotificationSafe("Error al iniciar sesión: " + error.message, "error");
+    showNotificationSafe(
+      "Error al conectar con el servidor: " + error.message,
+      "error"
+    );
   }
 }
 
@@ -278,37 +280,40 @@ async function handleRegister(event) {
 
   try {
     showLoader();
-    await HTTP.mockAPI(null, 500);
 
-    // Obtener usuarios
-    await initDemoUsers();
-    const users = Storage.get("users") || [];
+    // Hacer petición a la API
+    const response = await apiFetch(API_CONFIG.ENDPOINTS.REGISTER, {
+      method: "POST",
+      body: JSON.stringify({
+        name: nombre,
+        phone: telefono,
+        email: email,
+        password: password,
+        status: true,
+        rol: {
+          id: 1, // Por defecto se registra como empleado (rol id 1)
+        },
+      }),
+    });
 
-    // Verificar si el email ya existe
-    if (users.find((u) => u.email === email)) {
-      hideLoader();
-      showError("emailError", "Este email ya está registrado");
+    const result = await response.json();
+
+    hideLoader();
+
+    // Verificar si hubo error
+    if (result.error || !response.ok) {
+      console.log("Error en registro:", result.message);
+
+      // Mostrar error específico según el mensaje
+      if (result.message && result.message.includes("email")) {
+        showError("emailError", result.message);
+      } else {
+        showNotification(result.message || "Error al crear la cuenta", "error");
+      }
       return;
     }
 
-    // Crear nuevo usuario (por defecto como empleado)
-    const newUser = {
-      id: Generators.numericId(),
-      nombre: nombre,
-      email: email,
-      password: password,
-      rol: "empleado",
-      telefono: telefono,
-      activo: true,
-      fechaRegistro: new Date().toISOString(),
-      zona: "Pendiente asignar",
-      vehiculo: "Pendiente asignar",
-    };
-
-    users.push(newUser);
-    Storage.set("users", users);
-
-    hideLoader();
+    console.log("Registro exitoso:", result);
     showNotification("Cuenta creada exitosamente", "success");
 
     // Redirigir al login
@@ -318,7 +323,10 @@ async function handleRegister(event) {
   } catch (error) {
     hideLoader();
     console.error("Error en registro:", error);
-    showNotification("Error al crear cuenta", "error");
+    showNotification(
+      "Error al conectar con el servidor: " + error.message,
+      "error"
+    );
   }
 }
 

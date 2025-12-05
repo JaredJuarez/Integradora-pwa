@@ -190,6 +190,7 @@
     </div>
 
     <script src="../../assets/js/utils.js"></script>
+    <script src="../../assets/js/API_BASE.js"></script>
     <script src="../../assets/js/app.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script>
@@ -213,7 +214,10 @@
       function fillDemoUser(type) {
         const demoUsers = {
           admin: { email: "admin@empresa.com", password: "Admin123" },
-          empleado: { email: "laura.martinez@empresa.com", password: "Empleado123" },
+          empleado: {
+            email: "laura.martinez@empresa.com",
+            password: "Empleado123",
+          },
         };
 
         document.getElementById("email").value = demoUsers[type].email;
