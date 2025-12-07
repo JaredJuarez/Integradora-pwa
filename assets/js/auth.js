@@ -1,77 +1,5 @@
 // auth.js - Gestión de autenticación
 
-// Usuario administrador por defecto
-const ADMIN_USER = {
-  id: "ADMIN001",
-  nombre: "Administrador Sistema",
-  email: "admin@empresa.com",
-  password: "Admin123",
-  rol: "administrador",
-  telefono: "7771234567",
-  activo: true,
-  fechaRegistro: "2025-01-01",
-};
-
-// Inicializar usuarios en localStorage si no existen
-// Los usuarios se sincronizan con los empleados de admin-data.js
-async function initDemoUsers() {
-  // Siempre incluir usuario admin
-  let users = [ADMIN_USER];
-
-  // Si existe adminDataManager, sincronizar empleados como usuarios
-  if (typeof adminDataManager !== "undefined") {
-    const employees = await adminDataManager.getAllEmployees();
-
-    // Convertir empleados a usuarios con contraseña por defecto
-    const employeeUsers = employees.map((emp) => ({
-      id: emp.id,
-      nombre: emp.nombre,
-      email: emp.email,
-      password: "Empleado123", // Contraseña por defecto
-      rol: "empleado",
-      telefono: emp.telefono,
-      activo: emp.activo,
-      fechaRegistro: emp.fechaRegistro,
-    }));
-
-    users = [...users, ...employeeUsers];
-  }
-
-  // Guardar usuarios sincronizados
-  if (!Storage.get("users") || Storage.get("users").length === 0) {
-    Storage.set("users", users);
-  }
-
-  return users;
-}
-
-// Sincronizar usuarios con empleados (llamar cuando se crea/actualiza un empleado)
-async function syncUsersWithEmployees() {
-  if (typeof adminDataManager !== "undefined") {
-    const currentUsers = Storage.get("users") || [];
-    const admin =
-      currentUsers.find((u) => u.rol === "administrador") || ADMIN_USER;
-
-    const employees = await adminDataManager.getAllEmployees();
-    const employeeUsers = employees.map((emp) => {
-      // Mantener contraseña existente si ya existe el usuario
-      const existingUser = currentUsers.find((u) => u.id === emp.id);
-      return {
-        id: emp.id,
-        nombre: emp.nombre,
-        email: emp.email,
-        password: existingUser ? existingUser.password : "Empleado123",
-        rol: "empleado",
-        telefono: emp.telefono,
-        activo: emp.activo,
-        fechaRegistro: emp.fechaRegistro,
-      };
-    });
-
-    Storage.set("users", [admin, ...employeeUsers]);
-  }
-}
-
 // Verificar si el usuario está autenticado
 function isAuthenticated() {
   const session = Storage.get("session");
@@ -452,9 +380,7 @@ function updateUserInfo() {
 }
 
 // Inicializar en DOMContentLoaded
-document.addEventListener("DOMContentLoaded", async () => {
-  await initDemoUsers();
-
+document.addEventListener("DOMContentLoaded", () => {
   // Si estamos en una página protegida, actualizar info del usuario
   if (isAuthenticated()) {
     updateUserInfo();

@@ -149,31 +149,6 @@
               Iniciar Sesión
             </button>
           </div>
-
-          <!-- Demo de usuarios -->
-          <div class="mt-6">
-            <p class="text-sm text-gray-600 text-center mb-3">
-              Usuarios de prueba:
-            </p>
-            <div class="grid grid-cols-1 gap-2">
-              <button
-                type="button"
-                class="text-sm bg-purple-50 text-purple-700 px-3 py-2 rounded hover:bg-purple-100"
-                onclick="fillDemoUser('admin')"
-              >
-                <i class="fas fa-user-shield mr-1"></i> Admin: admin@empresa.com
-                / Admin123
-              </button>
-              <button
-                type="button"
-                class="text-sm bg-green-50 text-green-700 px-3 py-2 rounded hover:bg-green-100"
-                onclick="fillDemoUser('empleado')"
-              >
-                <i class="fas fa-briefcase mr-1"></i> Empleado:
-                laura.martinez@empresa.com / Empleado123
-              </button>
-            </div>
-          </div>
         </form>
 
         <!-- Volver al inicio -->
@@ -208,20 +183,6 @@
           toggleIcon.classList.remove("fa-eye-slash");
           toggleIcon.classList.add("fa-eye");
         }
-      }
-
-      // Llenar con usuario demo
-      function fillDemoUser(type) {
-        const demoUsers = {
-          admin: { email: "admin@empresa.com", password: "Admin123" },
-          empleado: {
-            email: "laura.martinez@empresa.com",
-            password: "Empleado123",
-          },
-        };
-
-        document.getElementById("email").value = demoUsers[type].email;
-        document.getElementById("password").value = demoUsers[type].password;
       }
 
       // Manejar envío del formulario
