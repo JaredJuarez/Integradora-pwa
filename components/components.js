@@ -63,38 +63,12 @@ function createHeader(title = "Dashboard", showMenuBtn = true) {
                             </div>
                         </div>
 
-                        <!-- User menu -->
-                        <div class="relative">
-                            <button 
-                                onclick="toggleUserMenu()" 
-                                class="flex items-center text-gray-500 hover:text-gray-700 focus:outline-none"
-                            >
-                                <div class="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold">
-                                    ${userInitial}
-                                </div>
-                                <i class="fas fa-chevron-down ml-2 text-sm"></i>
-                            </button>
-                            <div id="userDropdown" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-1 z-50">
-                                <div class="px-4 py-3 border-b">
-                                    <p id="userName" class="text-sm font-medium text-gray-900">${userName}</p>
-                                    <p id="userEmail" class="text-xs text-gray-500">${userEmail}</p>
-                                    <p class="text-xs text-gray-400 mt-1">
-                                        <span id="userRole" class="badge badge-primary">${Format.capitalize(
-                                          user.rol
-                                        )}</span>
-                                    </p>
-                                </div>
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-user mr-2"></i> Mi Perfil
-                                </a>
-                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                    <i class="fas fa-cog mr-2"></i> Configuración
-                                </a>
-                                <div class="border-t"></div>
-                                <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-                                    <i class="fas fa-sign-out-alt mr-2">Cerrar Sesión</i>
-                                </button>
+                        <!-- User info -->
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold">
+                                ${userInitial}
                             </div>
+                            <span class="ml-2 text-sm font-medium text-gray-700 hidden sm:block">${userName}</span>
                         </div>
                     </div>
                 </div>
