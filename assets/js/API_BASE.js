@@ -15,6 +15,10 @@ const API_CONFIG = {
     // Product endpoints
     PRODUCTS: "/api/products",
     PRODUCT_BY_ID: (id) => `/api/products/${id}`,
+
+    // Store endpoints
+    STORES: "/api/stores",
+    STORE_BY_ID: (id) => `/api/stores/${id}`,
   },
 
   // Timeout en milisegundos

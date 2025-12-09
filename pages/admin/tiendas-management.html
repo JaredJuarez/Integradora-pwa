@@ -144,16 +144,6 @@
                       <th
                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                       >
-                        Última Visita
-                      </th>
-                      <th
-                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Próxima Visita
-                      </th>
-                      <th
-                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
                         Empleado
                       </th>
                       <th
@@ -287,15 +277,18 @@
     </div>
 
     <script src="../../assets/js/utils.js"></script>
-    <script src="../../assets/js/mock-api.js"></script>
+    <script src="../../assets/js/API_BASE.js"></script>
+    <script src="../../assets/js/store-api.js"></script>
+    <script src="../../assets/js/employee-api.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
-    <script src="../../assets/js/admin-data.js"></script>
     <script src="../../components/components.js"></script>
 
     <script>
       // Variables globales
       let editingStoreId = null;
+      let allStores = [];
+      let allEmployees = [];
 
       // Inicializar página
       document.addEventListener("DOMContentLoaded", async () => {
@@ -305,9 +298,9 @@
         // Verificar autenticación
         protectPage("administrador");
 
+        await loadEmployees();
         await loadStores();
         await loadStats();
-        await loadEmployeeFilters();
 
         // Eventos
         document
@@ -328,162 +321,76 @@
           createHeader("Gestión de Tiendas");
       }
 
-      async function loadEmployeeFilters() {
-        const employees = await adminDataManager.getAllEmployees();
-        const activeEmployees = employees.filter((emp) => emp.activo);
-        const filterSelect = document.getElementById("filterEmployee");
-        const employeeSelect = document.getElementById("storeEmployee");
+      async function loadEmployees() {
+        try {
+          allEmployees = await employeeAPI.getAllEmployees();
+          const activeEmployees = allEmployees.filter((emp) => emp.activo);
+          const filterSelect = document.getElementById("filterEmployee");
+          const employeeSelect = document.getElementById("storeEmployee");
 
-        // Cargar filtro
-        filterSelect.innerHTML =
-          '<option value="">Todos los empleados</option>' +
-          activeEmployees
-            .map((emp) => `<option value="${emp.id}">${emp.nombre}</option>`)
-            .join("");
+          // Cargar filtro
+          filterSelect.innerHTML =
+            '<option value="">Todos los empleados</option>' +
+            activeEmployees
+              .map((emp) => `<option value="${emp.id}">${emp.nombre}</option>`)
+              .join("");
 
-        // Cargar select de asignación
-        employeeSelect.innerHTML =
-          '<option value="">Sin asignar</option>' +
-          activeEmployees
-            .map((emp) => `<option value="${emp.id}">${emp.nombre}</option>`)
-            .join("");
+          // Cargar select de asignación
+          employeeSelect.innerHTML =
+            '<option value="">Sin asignar</option>' +
+            activeEmployees
+              .map((emp) => `<option value="${emp.id}">${emp.nombre}</option>`)
+              .join("");
+        } catch (error) {
+          console.error("Error al cargar empleados:", error);
+        }
       }
 
       async function loadStores() {
-        const stores = await adminDataManager.getAllStores();
-        const employees = await adminDataManager.getAllEmployees();
-        const tbody = document.getElementById("storesTableBody");
-
-        if (stores.length === 0) {
-          tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fas fa-store text-4xl mb-2"></i>
-                            <p>No hay tiendas registradas</p>
-                        </td>
-                    </tr>
-                `;
-          return;
+        try {
+          showLoader();
+          allStores = await storeAPI.getAllStores();
+          hideLoader();
+          filterStores();
+        } catch (error) {
+          hideLoader();
+          showNotification(
+            "Error al cargar tiendas: " + error.message,
+            "error"
+          );
+          console.error("Error:", error);
         }
-
-        tbody.innerHTML = stores
-          .map((store) => {
-            const employee = store.empleadoAsignado
-              ? employees.find((emp) => emp.id === store.empleadoAsignado)
-              : null;
-            const nextVisit = adminDataManager.getNextVisitDate(store);
-            const shouldVisit = adminDataManager.shouldVisitToday(store);
-
-            return `
-                    <tr class="hover:bg-gray-50 ${
-                      shouldVisit ? "bg-yellow-50" : ""
-                    }">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
-                          store.id
-                        }</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <i class="fas fa-store text-gray-700 mr-3"></i>
-                                <div class="text-sm font-medium text-gray-900">${
-                                  store.nombre
-                                }</div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${
-                          store.direccion
-                        }</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Cada ${store.frecuenciaVisita} día${
-              store.frecuenciaVisita > 1 ? "s" : ""
-            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${
-                              store.ultimaVisita
-                                ? formatDate(store.ultimaVisita)
-                                : '<span class="text-yellow-600">Sin visitas</span>'
-                            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            ${
-                              nextVisit
-                                ? `<span class="${
-                                    shouldVisit
-                                      ? "text-red-600 font-bold"
-                                      : "text-gray-500"
-                                  }">${formatDate(
-                                    nextVisit.toISOString().split("T")[0]
-                                  )}</span>`
-                                : '<span class="text-yellow-600 font-bold">Pendiente</span>'
-                            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            ${
-                              employee
-                                ? `<span class="badge badge-primary">${employee.nombre}</span>`
-                                : '<span class="badge badge-warning">Sin asignar</span>'
-                            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                            <button onclick="editStore('${
-                              store.id
-                            }')" class="text-gray-600 hover:text-gray-900" title="Editar">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="assignEmployee('${
-                              store.id
-                            }')" class="text-blue-600 hover:text-blue-900" title="Asignar empleado">
-                                <i class="fas fa-user-plus"></i>
-                            </button>
-                            <button onclick="deleteStore('${
-                              store.id
-                            }')" class="text-red-600 hover:text-red-900" title="Eliminar">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
-          })
-          .join("");
       }
 
       async function loadStats() {
-        const stores = await adminDataManager.getAllStores();
-        const activeStores = stores.filter((s) => s.activa);
-        const assigned = activeStores.filter((s) => s.empleadoAsignado).length;
-        const unassigned = activeStores.filter(
-          (s) => !s.empleadoAsignado
-        ).length;
+        try {
+          const stores = allStores.filter((s) => s.activa);
+          const assigned = stores.filter((s) => s.empleadoAsignado).length;
+          const unassigned = stores.filter((s) => !s.empleadoAsignado).length;
 
-        // Contar visitas de hoy
-        let visitsToday = 0;
-        const employees = await adminDataManager.getAllEmployees();
-        for (const emp of employees) {
-          const storesToVisit = await adminDataManager.getStoresToVisitToday(
-            emp.id
-          );
-          visitsToday += storesToVisit.length;
+          document.getElementById("totalStores").textContent = stores.length;
+          document.getElementById("assignedStores").textContent = assigned;
+          document.getElementById("unassignedStores").textContent = unassigned;
+          document.getElementById("visitsTodayCount").textContent = 0; // Por ahora en 0
+        } catch (error) {
+          console.error("Error al cargar estadísticas:", error);
         }
-
-        document.getElementById("totalStores").textContent =
-          activeStores.length;
-        document.getElementById("assignedStores").textContent = assigned;
-        document.getElementById("unassignedStores").textContent = unassigned;
-        document.getElementById("visitsTodayCount").textContent = visitsToday;
       }
 
-      async function filterStores() {
+      function filterStores() {
         const searchTerm = document
           .getElementById("searchStore")
           .value.toLowerCase();
         const employeeFilter = document.getElementById("filterEmployee").value;
 
-        let stores = await adminDataManager.getAllStores();
+        let stores = [...allStores];
 
         // Filtrar por empleado
         if (employeeFilter) {
           stores = stores.filter(
-            (store) => store.empleadoAsignado === employeeFilter
+            (store) =>
+              store.empleadoAsignado &&
+              store.empleadoAsignado.toString() === employeeFilter
           );
         }
 
@@ -493,102 +400,72 @@
             (store) =>
               store.nombre.toLowerCase().includes(searchTerm) ||
               store.direccion.toLowerCase().includes(searchTerm) ||
-              store.id.toLowerCase().includes(searchTerm)
+              store.id.toString().includes(searchTerm)
           );
         }
 
         const tbody = document.getElementById("storesTableBody");
-        const employees = await adminDataManager.getAllEmployees();
 
         if (stores.length === 0) {
           tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
-                            <i class="fas fa-search text-4xl mb-2"></i>
-                            <p>No se encontraron tiendas</p>
-                        </td>
-                    </tr>
-                `;
+            <tr>
+              <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                <i class="fas fa-search text-4xl mb-2"></i>
+                <p>No se encontraron tiendas</p>
+              </td>
+            </tr>
+          `;
           return;
         }
 
         tbody.innerHTML = stores
           .map((store) => {
             const employee = store.empleadoAsignado
-              ? employees.find((emp) => emp.id === store.empleadoAsignado)
+              ? allEmployees.find((emp) => emp.id === store.empleadoAsignado)
               : null;
-            const nextVisit = adminDataManager.getNextVisitDate(store);
-            const shouldVisit = adminDataManager.shouldVisitToday(store);
 
             return `
-                    <tr class="hover:bg-gray-50 ${
-                      shouldVisit ? "bg-yellow-50" : ""
-                    }">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
-                          store.id
-                        }</td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <i class="fas fa-store text-gray-700 mr-3"></i>
-                                <div class="text-sm font-medium text-gray-900">${
-                                  store.nombre
-                                }</div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${
-                          store.direccion
-                        }</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            Cada ${store.frecuenciaVisita} día${
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
+                  store.id
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <i class="fas fa-store text-gray-700 mr-3"></i>
+                    <div class="text-sm font-medium text-gray-900">${
+                      store.nombre
+                    }</div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">${
+                  store.direccion
+                }</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  Cada ${store.frecuenciaVisita} día${
               store.frecuenciaVisita > 1 ? "s" : ""
             }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            ${
-                              store.ultimaVisita
-                                ? formatDate(store.ultimaVisita)
-                                : '<span class="text-yellow-600">Sin visitas</span>'
-                            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            ${
-                              nextVisit
-                                ? `<span class="${
-                                    shouldVisit
-                                      ? "text-red-600 font-bold"
-                                      : "text-gray-500"
-                                  }">${formatDate(
-                                    nextVisit.toISOString().split("T")[0]
-                                  )}</span>`
-                                : '<span class="text-yellow-600 font-bold">Pendiente</span>'
-                            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm">
-                            ${
-                              employee
-                                ? `<span class="badge badge-primary">${employee.nombre}</span>`
-                                : '<span class="badge badge-warning">Sin asignar</span>'
-                            }
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                            <button onclick="editStore('${
-                              store.id
-                            }')" class="text-gray-600 hover:text-gray-900">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="assignEmployee('${
-                              store.id
-                            }')" class="text-blue-600 hover:text-blue-900">
-                                <i class="fas fa-user-plus"></i>
-                            </button>
-                            <button onclick="deleteStore('${
-                              store.id
-                            }')" class="text-red-600 hover:text-red-900">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                `;
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                  ${
+                    employee
+                      ? `<span class="badge badge-primary">${employee.nombre}</span>`
+                      : '<span class="badge badge-warning">Sin asignar</span>'
+                  }
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                  <button onclick="editStore(${
+                    store.id
+                  })" class="text-gray-600 hover:text-gray-900" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button onclick="deleteStore(${
+                    store.id
+                  })" class="text-red-600 hover:text-red-900" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            `;
           })
           .join("");
       }
@@ -600,13 +477,14 @@
         const title = document.getElementById("modalTitle");
 
         form.reset();
-        await loadEmployeeFilters();
 
         if (id) {
           title.textContent = "Editar Tienda";
-          const store = await adminDataManager.getStoreById(id);
+          try {
+            showLoader();
+            const store = await storeAPI.getStoreById(id);
+            hideLoader();
 
-          if (store) {
             document.getElementById("storeId").value = store.id;
             document.getElementById("storeName").value = store.nombre;
             document.getElementById("storeAddress").value = store.direccion;
@@ -616,6 +494,13 @@
               store.empleadoAsignado || "";
             document.getElementById("storeActive").value =
               store.activa.toString();
+          } catch (error) {
+            hideLoader();
+            showNotification(
+              "Error al cargar tienda: " + error.message,
+              "error"
+            );
+            return;
           }
         } else {
           title.textContent = "Nueva Tienda";
@@ -644,56 +529,60 @@
         };
 
         try {
+          showLoader();
           if (editingStoreId) {
-            await adminDataManager.updateStore(editingStoreId, storeData);
+            await storeAPI.updateStore(editingStoreId, storeData);
             showNotification("Tienda actualizada exitosamente", "success");
           } else {
-            await adminDataManager.addStore(storeData);
+            await storeAPI.createStore(storeData);
             showNotification("Tienda creada exitosamente", "success");
           }
+          hideLoader();
 
           closeStoreModal();
           await loadStores();
           await loadStats();
         } catch (error) {
-          showNotification("Error al guardar la tienda", "error");
+          hideLoader();
+          showNotification(
+            "Error al guardar la tienda: " + error.message,
+            "error"
+          );
           console.error(error);
         }
       }
 
-      function editStore(id) {
-        openStoreModal(id);
-      }
-
-      async function assignEmployee(storeId) {
-        const store = await adminDataManager.getStoreById(storeId);
-        if (!store) return;
-
-        await openStoreModal(storeId);
+      async function editStore(id) {
+        await openStoreModal(id);
       }
 
       async function deleteStore(id) {
-        if (confirm("¿Estás seguro de eliminar esta tienda?")) {
+        const store = allStores.find((s) => s.id === id);
+        if (!store) return;
+
+        if (confirm(`¿Estás seguro de eliminar "${store.nombre}"?`)) {
           try {
-            await adminDataManager.deleteStore(id);
+            showLoader();
+            await storeAPI.deleteStore(id);
+            hideLoader();
             showNotification("Tienda eliminada exitosamente", "success");
             await loadStores();
             await loadStats();
           } catch (error) {
-            showNotification("Error al eliminar la tienda", "error");
+            hideLoader();
+            showNotification(
+              "Error al eliminar la tienda: " + error.message,
+              "error"
+            );
             console.error(error);
           }
         }
       }
 
-      function formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString("es-MX", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
-      }
+      window.editStore = editStore;
+      window.deleteStore = deleteStore;
+      window.openStoreModal = openStoreModal;
+      window.closeStoreModal = closeStoreModal;
     </script>
   </body>
 </html>
