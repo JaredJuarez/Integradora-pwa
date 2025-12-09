@@ -128,39 +128,26 @@
         </div>
       </div>
 
-      <!-- Filtros por categoría -->
+      <!-- Buscador de productos -->
       <div class="mb-6">
-        <div class="flex overflow-x-auto space-x-3 pb-2">
-          <button
-            onclick="filtrarPorCategoria('todas')"
-            class="category-tab active flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
-          >
-            Todas
-          </button>
-          <button
-            onclick="filtrarPorCategoria('Bebidas')"
-            class="category-tab flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
-          >
-            Bebidas
-          </button>
-          <button
-            onclick="filtrarPorCategoria('Botanas')"
-            class="category-tab flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
-          >
-            Botanas
-          </button>
-          <button
-            onclick="filtrarPorCategoria('Lácteos')"
-            class="category-tab flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
-          >
-            Lácteos
-          </button>
-          <button
-            onclick="filtrarPorCategoria('Limpieza')"
-            class="category-tab flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-gray-200 text-gray-700"
-          >
-            Limpieza
-          </button>
+        <div class="stats-card rounded-lg p-3 shadow-lg">
+          <div class="flex items-center space-x-3">
+            <i class="fas fa-search text-gray-400"></i>
+            <input
+              type="text"
+              id="buscadorProductos"
+              placeholder="Buscar productos..."
+              onkeyup="buscarProductos()"
+              class="flex-1 bg-transparent border-none outline-none text-gray-800 placeholder-gray-400"
+            />
+            <button
+              onclick="limpiarBuscador()"
+              id="btnLimpiar"
+              class="text-gray-400 hover:text-gray-600 hidden"
+            >
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -265,7 +252,7 @@
       let empleadoActual;
       let productos = [];
       let productosSeleccionados = {};
-      let categoriaActual = "todas";
+      let terminoBusqueda = "";
       let fotoCapturada = null; // Almacenar foto en base64
 
       async function initProductos() {
@@ -335,21 +322,24 @@
         const container = document.getElementById("productosContainer");
         let productosFiltrados = productos;
 
-        // Filtrar por categoría si no es 'todas'
-        if (categoriaActual !== "todas") {
-          productosFiltrados = productos.filter(
-            (p) => p.description === categoriaActual
-          );
+        // Filtrar por término de búsqueda
+        if (terminoBusqueda) {
+          productosFiltrados = productos.filter((p) => {
+            const nombre = p.name.toLowerCase();
+            const descripcion = (p.description || "").toLowerCase();
+            const termino = terminoBusqueda.toLowerCase();
+            return nombre.includes(termino) || descripcion.includes(termino);
+          });
         }
 
         if (productosFiltrados.length === 0) {
           container.innerHTML = `
             <div class="stats-card rounded-lg p-6 text-center shadow-lg">
               <i class="fas fa-box-open text-gray-400 text-3xl mb-3"></i>
-              <p class="text-gray-600">No hay productos ${
-                categoriaActual !== "todas"
-                  ? "en esta categoría"
-                  : "disponibles"
+              <p class="text-gray-600">${
+                terminoBusqueda
+                  ? "No se encontraron productos"
+                  : "No hay productos disponibles"
               }</p>
             </div>
           `;
@@ -413,17 +403,32 @@
           .join("");
       }
 
-      function filtrarPorCategoria(categoria) {
-        categoriaActual = categoria;
+      function buscarProductos() {
+        const input = document.getElementById("buscadorProductos");
+        const btnLimpiar = document.getElementById("btnLimpiar");
 
-        // Actualizar tabs
-        document.querySelectorAll(".category-tab").forEach((tab) => {
-          tab.classList.remove("active");
-        });
-        event.target.classList.add("active");
+        terminoBusqueda = input.value.trim();
 
-        // Recargar productos
+        // Mostrar/ocultar botón limpiar
+        if (terminoBusqueda) {
+          btnLimpiar.classList.remove("hidden");
+        } else {
+          btnLimpiar.classList.add("hidden");
+        }
+
         cargarProductos();
+      }
+
+      function limpiarBuscador() {
+        const input = document.getElementById("buscadorProductos");
+        const btnLimpiar = document.getElementById("btnLimpiar");
+
+        input.value = "";
+        terminoBusqueda = "";
+        btnLimpiar.classList.add("hidden");
+
+        cargarProductos();
+        input.focus();
       }
 
       function cambiarCantidad(productoId, delta) {
