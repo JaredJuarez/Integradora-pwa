@@ -262,25 +262,33 @@
         html5QrCode = new Html5Qrcode("qr-reader");
 
         const config = {
-          fps: 1, // Escanear 1 vez por segundo
+          fps: 10, // Escanear 10 veces por segundo para detección continua
           qrbox: function (viewfinderWidth, viewfinderHeight) {
             // Área de escaneo más grande (85% del área visible)
             let minEdgePercentage = 0.85;
             let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
             let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+            console.log("📐 Tamaño del área de escaneo:", qrboxSize);
             return {
               width: qrboxSize,
               height: qrboxSize,
             };
           },
           aspectRatio: 1.0,
+          disableFlip: false, // Permitir escaneo de QR invertidos
+          videoConstraints: {
+            facingMode: "environment",
+            focusMode: "continuous",
+          },
         };
+
+        console.log("📷 Iniciando cámara con configuración:", config);
 
         // Actualizar estado
         document.getElementById("scannerStatus").innerHTML = `
           <div class="flex items-center space-x-3">
             <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-            <span class="text-gray-800 font-medium">Escaneando código QR...</span>
+            <span class="text-gray-800 font-medium">Escaneando continuamente...</span>
           </div>
         `;
 
@@ -291,8 +299,12 @@
             onScanSuccess,
             onScanFailure
           )
+          .then(() => {
+            console.log("✅ Cámara iniciada correctamente");
+            console.log("🎯 Estado del escáner:", html5QrCode.getState());
+          })
           .catch((err) => {
-            console.error("Error al iniciar cámara:", err);
+            console.error("❌ Error al iniciar cámara:", err);
             document.getElementById("scannerStatus").innerHTML = `
             <div class="flex items-center space-x-3">
               <div class="w-3 h-3 bg-red-400 rounded-full"></div>
@@ -309,15 +321,24 @@
       function onScanSuccess(decodedText, decodedResult) {
         if (escaneoEnProceso) return;
 
-        console.log("QR detectado:", decodedText);
-        console.log("ID de tienda esperado:", tiendaActual.id);
+        console.log("✅ QR DETECTADO:", decodedText);
+        console.log("📦 Tipo:", typeof decodedText);
+        console.log("🏪 ID de tienda esperado:", tiendaActual.id);
+        console.log("📦 Tipo ID tienda:", typeof tiendaActual.id);
 
         // Validar inmediatamente
         const qrLimpio = decodedText.trim();
         const idTienda = tiendaActual.id.toString();
 
+        console.log("🔍 Comparación:", {
+          qrLimpio: qrLimpio,
+          idTienda: idTienda,
+          sonIguales: qrLimpio === idTienda,
+        });
+
         if (qrLimpio === idTienda) {
           escaneoEnProceso = true;
+          console.log("✅ QR VÁLIDO - Procesando...");
 
           // Detener escáner y continuar
           html5QrCode
@@ -331,13 +352,16 @@
             });
         } else {
           console.log(
-            `QR no coincide. Esperado: ${idTienda}, Recibido: ${qrLimpio}`
+            `❌ QR no coincide. Esperado: "${idTienda}", Recibido: "${qrLimpio}"`
           );
         }
       }
 
       function onScanFailure(error) {
-        // No hacer nada, es normal que falle mientras busca el QR
+        // Solo mostrar errores significativos, no cada frame fallido
+        if (error && !error.includes("NotFoundException")) {
+          console.log("⚠️ Error de escaneo:", error);
+        }
       }
 
       function volverAtras() {
