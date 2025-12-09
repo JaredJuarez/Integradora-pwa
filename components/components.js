@@ -138,6 +138,13 @@ function createAdminSidebar() {
                     <i class="fas fa-box w-6"></i>
                     <span class="ml-3">Productos</span>
                 </a>
+                
+                <a href="ordenes-management.html" class="flex items-center px-4 py-3 rounded-lg hover:bg-gray-700 transition ${isActive(
+                  "ordenes"
+                )}">
+                    <i class="fas fa-clipboard-list w-6"></i>
+                    <span class="ml-3">Órdenes</span>
+                </a>
             </nav>
             
             <div class="p-4 border-t border-gray-700">
