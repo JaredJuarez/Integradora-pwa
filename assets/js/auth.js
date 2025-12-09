@@ -99,6 +99,7 @@ async function handleLogin(event) {
     const session = {
       user: {
         email: email,
+        nombre: email.split("@")[0], // Usar la parte del email antes del @ como nombre temporal
         rol: result.data.role.toLowerCase(), // EMPLOYEE -> employee, ADMIN -> admin
       },
       token: result.data.token,

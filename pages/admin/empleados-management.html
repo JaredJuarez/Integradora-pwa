@@ -266,10 +266,10 @@
     </div>
 
     <script src="../../assets/js/utils.js"></script>
-    <script src="../../assets/js/mock-api.js"></script>
+    <script src="../../assets/js/API_BASE.js"></script>
+    <script src="../../assets/js/employee-api.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
-    <script src="../../assets/js/admin-data.js"></script>
     <script src="../../components/components.js"></script>
 
     <script>
@@ -307,11 +307,14 @@
       }
 
       async function loadEmployees() {
-        const employees = await adminDataManager.getAllEmployees();
-        const tbody = document.getElementById("employeesTableBody");
+        try {
+          showLoader();
+          const employees = await employeeAPI.getAllEmployees();
+          hideLoader();
+          const tbody = document.getElementById("employeesTableBody");
 
-        if (employees.length === 0) {
-          tbody.innerHTML = `
+          if (employees.length === 0) {
+            tbody.innerHTML = `
                     <tr>
                         <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                             <i class="fas fa-users text-4xl mb-2"></i>
@@ -319,12 +322,12 @@
                         </td>
                     </tr>
                 `;
-          return;
-        }
+            return;
+          }
 
-        tbody.innerHTML = employees
-          .map(
-            (emp) => `
+          tbody.innerHTML = employees
+            .map(
+              (emp) => `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
                       emp.id
@@ -373,38 +376,52 @@
                     </td>
                 </tr>
             `
-          )
-          .join("");
+            )
+            .join("");
+        } catch (error) {
+          hideLoader();
+          showNotification(
+            "Error al cargar empleados: " + error.message,
+            "error"
+          );
+          console.error("Error:", error);
+        }
       }
 
       async function loadStats() {
-        const employees = await adminDataManager.getAllEmployees();
-        const active = employees.filter((emp) => emp.activo).length;
-        const inactive = employees.filter((emp) => !emp.activo).length;
+        try {
+          const employees = await employeeAPI.getAllEmployees();
+          const active = employees.filter((emp) => emp.activo).length;
+          const inactive = employees.filter((emp) => !emp.activo).length;
 
-        document.getElementById("totalEmployees").textContent =
-          employees.length;
-        document.getElementById("activeEmployees").textContent = active;
-        document.getElementById("inactiveEmployees").textContent = inactive;
+          document.getElementById("totalEmployees").textContent =
+            employees.length;
+          document.getElementById("activeEmployees").textContent = active;
+          document.getElementById("inactiveEmployees").textContent = inactive;
+        } catch (error) {
+          console.error("Error al cargar estadísticas:", error);
+        }
       }
 
-      function filterEmployees() {
+      async function filterEmployees() {
         const searchTerm = document
           .getElementById("searchEmployee")
           .value.toLowerCase();
-        const employees = adminDataManager.getAllEmployees();
 
-        const filtered = employees.filter(
-          (emp) =>
-            emp.nombre.toLowerCase().includes(searchTerm) ||
-            emp.email.toLowerCase().includes(searchTerm) ||
-            emp.id.toLowerCase().includes(searchTerm)
-        );
+        try {
+          const employees = await employeeAPI.getAllEmployees();
 
-        const tbody = document.getElementById("employeesTableBody");
+          const filtered = employees.filter(
+            (emp) =>
+              emp.nombre.toLowerCase().includes(searchTerm) ||
+              emp.email.toLowerCase().includes(searchTerm) ||
+              emp.id.toString().toLowerCase().includes(searchTerm)
+          );
 
-        if (filtered.length === 0) {
-          tbody.innerHTML = `
+          const tbody = document.getElementById("employeesTableBody");
+
+          if (filtered.length === 0) {
+            tbody.innerHTML = `
                     <tr>
                         <td colspan="7" class="px-6 py-8 text-center text-gray-500">
                             <i class="fas fa-search text-4xl mb-2"></i>
@@ -412,12 +429,12 @@
                         </td>
                     </tr>
                 `;
-          return;
-        }
+            return;
+          }
 
-        tbody.innerHTML = filtered
-          .map(
-            (emp) => `
+          tbody.innerHTML = filtered
+            .map(
+              (emp) => `
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${
                       emp.id
@@ -464,11 +481,14 @@
                     </td>
                 </tr>
             `
-          )
-          .join("");
+            )
+            .join("");
+        } catch (error) {
+          console.error("Error al filtrar empleados:", error);
+        }
       }
 
-      function openEmployeeModal(id = null) {
+      async function openEmployeeModal(id = null) {
         editingEmployeeId = id;
         const modal = document.getElementById("employeeModal");
         const form = document.getElementById("employeeForm");
@@ -478,20 +498,32 @@
 
         if (id) {
           title.textContent = "Editar Empleado";
-          const employee = adminDataManager.getEmployeeById(id);
+          try {
+            showLoader();
+            const employee = await employeeAPI.getEmployeeById(id);
+            hideLoader();
 
-          if (employee) {
-            document.getElementById("employeeId").value = employee.id;
-            document.getElementById("employeeName").value = employee.nombre;
-            document.getElementById("employeeEmail").value = employee.email;
-            document.getElementById("employeePhone").value = employee.telefono;
-            document.getElementById("employeeActive").value =
-              employee.activo.toString();
-            document.getElementById("employeePassword").placeholder =
-              "Dejar vacío para mantener contraseña actual";
-            document
-              .getElementById("employeePassword")
-              .removeAttribute("required");
+            if (employee) {
+              document.getElementById("employeeId").value = employee.id;
+              document.getElementById("employeeName").value = employee.nombre;
+              document.getElementById("employeeEmail").value = employee.email;
+              document.getElementById("employeePhone").value =
+                employee.telefono;
+              document.getElementById("employeeActive").value =
+                employee.activo.toString();
+              document.getElementById("employeePassword").placeholder =
+                "Dejar vacío para mantener contraseña actual";
+              document
+                .getElementById("employeePassword")
+                .removeAttribute("required");
+            }
+          } catch (error) {
+            hideLoader();
+            showNotification(
+              "Error al cargar empleado: " + error.message,
+              "error"
+            );
+            return;
           }
         } else {
           title.textContent = "Nuevo Empleado";
@@ -510,7 +542,7 @@
         editingEmployeeId = null;
       }
 
-      function handleEmployeeSubmit(e) {
+      async function handleEmployeeSubmit(e) {
         e.preventDefault();
 
         const employeeData = {
@@ -532,19 +564,25 @@
         }
 
         try {
+          showLoader();
           if (editingEmployeeId) {
-            adminDataManager.updateEmployee(editingEmployeeId, employeeData);
+            await employeeAPI.updateEmployee(editingEmployeeId, employeeData);
             showNotification("Empleado actualizado exitosamente", "success");
           } else {
-            adminDataManager.createEmployee(employeeData);
+            await employeeAPI.createEmployee(employeeData);
             showNotification("Empleado creado exitosamente", "success");
           }
+          hideLoader();
 
           closeEmployeeModal();
-          loadEmployees();
-          loadStats();
+          await loadEmployees();
+          await loadStats();
         } catch (error) {
-          showNotification("Error al guardar el empleado", "error");
+          hideLoader();
+          showNotification(
+            "Error al guardar el empleado: " + error.message,
+            "error"
+          );
           console.error(error);
         }
       }
@@ -553,19 +591,21 @@
         openEmployeeModal(id);
       }
 
-      function deleteEmployee(id) {
-        if (
-          confirm(
-            "¿Estás seguro de eliminar este empleado? Se desasignará de todas sus tiendas."
-          )
-        ) {
+      async function deleteEmployee(id) {
+        if (confirm("¿Estás seguro de eliminar este empleado?")) {
           try {
-            adminDataManager.deleteEmployee(id);
+            showLoader();
+            await employeeAPI.deleteEmployee(id);
+            hideLoader();
             showNotification("Empleado eliminado exitosamente", "success");
-            loadEmployees();
-            loadStats();
+            await loadEmployees();
+            await loadStats();
           } catch (error) {
-            showNotification("Error al eliminar el empleado", "error");
+            hideLoader();
+            showNotification(
+              "Error al eliminar el empleado: " + error.message,
+              "error"
+            );
             console.error(error);
           }
         }

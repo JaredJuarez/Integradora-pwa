@@ -7,10 +7,14 @@ const API_CONFIG = {
     LOGIN: "/api/auth",
     REGISTER: "/api/auth/register",
 
-    // Otros endpoints se pueden agregar aquí conforme sean necesarios
-    // PRODUCTS: '/api/products',
-    // STORES: '/api/stores',
-    // etc.
+    // User/Employee endpoints
+    USERS: "/api/user",
+    USER_BY_ID: (id) => `/api/user/${id}`,
+    EMPLOYEES: "/api/user/employees",
+
+    // Product endpoints
+    PRODUCTS: "/api/products",
+    PRODUCT_BY_ID: (id) => `/api/products/${id}`,
   },
 
   // Timeout en milisegundos
