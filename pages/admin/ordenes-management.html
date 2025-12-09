@@ -8,10 +8,24 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link
       rel="stylesheet"
+      <link
+      rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
     <link rel="manifest" href="../../manifest.json" />
     <link rel="stylesheet" href="../../assets/css/styles.css" />
+
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTJa-KaC0GQ055bZp9zc5kwa6acP-PDww"></script>
+
+    <style>
+      #mapContainer {
+        width: 100%;
+        height: 400px;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+    </style>
   </head>
   <body class="bg-gray-100">
     <div class="flex h-screen overflow-hidden">
@@ -164,6 +178,67 @@
             </div>
           </div>
         </main>
+      </div>
+    </div>
+
+    <!-- Modal de Mapa -->
+    <div
+      id="mapModal"
+      class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    >
+      <div
+        class="relative top-20 mx-auto p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white"
+      >
+        <div class="flex justify-between items-center border-b pb-4 mb-4">
+          <div>
+            <h3 class="text-2xl font-bold text-gray-900">
+              Ubicación de la Orden
+            </h3>
+            <p class="text-sm text-gray-600 mt-1" id="mapOrderInfo">Orden #0</p>
+          </div>
+          <button
+            onclick="closeMapModal()"
+            class="text-gray-400 hover:text-gray-600"
+          >
+            <i class="fas fa-times text-2xl"></i>
+          </button>
+        </div>
+
+        <!-- Mapa -->
+        <div id="mapContainer" class="mb-4"></div>
+
+        <!-- Coordenadas -->
+        <div class="bg-gray-50 p-4 rounded-lg mb-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <p class="text-sm text-gray-600">Latitud</p>
+              <p class="font-medium text-gray-900" id="mapLatitude">-</p>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Longitud</p>
+              <p class="font-medium text-gray-900" id="mapLongitude">-</p>
+            </div>
+          </div>
+          <div class="mt-3">
+            <a
+              id="googleMapsLink"
+              href="#"
+              target="_blank"
+              class="text-blue-600 hover:text-blue-800 text-sm"
+            >
+              <i class="fas fa-external-link-alt mr-2"></i>Abrir en Google Maps
+            </a>
+          </div>
+        </div>
+
+        <div class="flex justify-end">
+          <button
+            onclick="closeMapModal()"
+            class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+          >
+            Cerrar
+          </button>
+        </div>
       </div>
     </div>
 
@@ -381,6 +456,15 @@
                       <i class="fas fa-eye mr-2"></i>Ver Detalles
                     </button>
                     <button
+                      onclick="viewOrderLocation(${order.id}, '${
+              order.location
+            }')"
+                      class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition"
+                      title="Ver ubicación"
+                    >
+                      <i class="fas fa-map-marker-alt"></i>
+                    </button>
+                    <button
                       onclick="deleteOrder(${order.id})"
                       class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition"
                       title="Eliminar"
@@ -561,7 +645,103 @@
         filterOrders();
       }
 
+      // Funciones del mapa
+      let map = null;
+      let marker = null;
+
+      function viewOrderLocation(orderId, location) {
+        if (!location || location === "0,0") {
+          showNotification(
+            "Esta orden no tiene ubicación registrada",
+            "warning"
+          );
+          return;
+        }
+
+        // Parsear coordenadas
+        const [lat, lng] = location
+          .split(",")
+          .map((coord) => parseFloat(coord.trim()));
+
+        if (isNaN(lat) || isNaN(lng)) {
+          showNotification("Coordenadas inválidas", "error");
+          return;
+        }
+
+        // Actualizar información del modal
+        document.getElementById(
+          "mapOrderInfo"
+        ).textContent = `Orden #${orderId}`;
+        document.getElementById("mapLatitude").textContent = lat.toFixed(6);
+        document.getElementById("mapLongitude").textContent = lng.toFixed(6);
+        document.getElementById(
+          "googleMapsLink"
+        ).href = `https://www.google.com/maps?q=${lat},${lng}`;
+
+        // Mostrar modal
+        document.getElementById("mapModal").classList.remove("hidden");
+
+        // Esperar a que el modal sea visible antes de inicializar el mapa
+        setTimeout(() => {
+          initMap(lat, lng);
+        }, 100);
+      }
+
+      function initMap(lat, lng) {
+        const position = { lat, lng };
+
+        // Crear mapa
+        map = new google.maps.Map(document.getElementById("mapContainer"), {
+          center: position,
+          zoom: 15,
+          mapTypeId: google.maps.MapTypeId.ROADMAP,
+        });
+
+        // Agregar marcador
+        marker = new google.maps.Marker({
+          position: position,
+          map: map,
+          title: "Ubicación de la orden",
+          animation: google.maps.Animation.DROP,
+        });
+
+        // InfoWindow con información
+        const infoWindow = new google.maps.InfoWindow({
+          content: `
+            <div class="p-2">
+              <h3 class="font-bold text-gray-900 mb-1">Ubicación de la Orden</h3>
+              <p class="text-sm text-gray-600">Lat: ${lat.toFixed(6)}</p>
+              <p class="text-sm text-gray-600">Lng: ${lng.toFixed(6)}</p>
+            </div>
+          `,
+        });
+
+        // Mostrar info al hacer clic en el marcador
+        marker.addListener("click", () => {
+          infoWindow.open(map, marker);
+        });
+
+        // Abrir info por defecto
+        infoWindow.open(map, marker);
+      }
+
+      function closeMapModal() {
+        document.getElementById("mapModal").classList.add("hidden");
+
+        // Limpiar mapa
+        if (map) {
+          map = null;
+          marker = null;
+        }
+      }
+
       // Cerrar modal al hacer clic fuera
+      document.getElementById("mapModal").addEventListener("click", (e) => {
+        if (e.target.id === "mapModal") {
+          closeMapModal();
+        }
+      });
+
       document.getElementById("detailsModal").addEventListener("click", (e) => {
         if (e.target.id === "detailsModal") {
           closeDetailsModal();

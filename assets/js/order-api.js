@@ -26,6 +26,7 @@ class OrderAPI {
         id: order.id,
         fechaVisita: order.visitDate,
         fotoUrl: order.photoUrl,
+        location: order.location || "0,0",
         items: order.items.map((item) => ({
           id: item.id,
           producto: {
@@ -65,6 +66,7 @@ class OrderAPI {
         id: order.id,
         fechaVisita: order.visitDate,
         fotoUrl: order.photoUrl,
+        location: order.location || "0,0",
         items: order.items.map((item) => ({
           id: item.id,
           producto: {
