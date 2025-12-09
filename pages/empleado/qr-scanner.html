@@ -262,8 +262,17 @@
         html5QrCode = new Html5Qrcode("qr-reader");
 
         const config = {
-          fps: 10,
-          qrbox: { width: 250, height: 250 },
+          fps: 1, // Escanear 1 vez por segundo
+          qrbox: function (viewfinderWidth, viewfinderHeight) {
+            // Área de escaneo más grande (85% del área visible)
+            let minEdgePercentage = 0.85;
+            let minEdgeSize = Math.min(viewfinderWidth, viewfinderHeight);
+            let qrboxSize = Math.floor(minEdgeSize * minEdgePercentage);
+            return {
+              width: qrboxSize,
+              height: qrboxSize,
+            };
+          },
           aspectRatio: 1.0,
         };
 
@@ -299,20 +308,32 @@
 
       function onScanSuccess(decodedText, decodedResult) {
         if (escaneoEnProceso) return;
-        escaneoEnProceso = true;
 
-        console.log("QR escaneado:", decodedText);
+        console.log("QR detectado:", decodedText);
+        console.log("ID de tienda esperado:", tiendaActual.id);
 
-        // Detener el escáner
-        html5QrCode
-          .stop()
-          .then(() => {
-            procesarEscaneoQR(decodedText);
-          })
-          .catch((err) => {
-            console.error("Error al detener escáner:", err);
-            procesarEscaneoQR(decodedText);
-          });
+        // Validar inmediatamente
+        const qrLimpio = decodedText.trim();
+        const idTienda = tiendaActual.id.toString();
+
+        if (qrLimpio === idTienda) {
+          escaneoEnProceso = true;
+
+          // Detener escáner y continuar
+          html5QrCode
+            .stop()
+            .then(() => {
+              procesarEscaneoQR(decodedText);
+            })
+            .catch((err) => {
+              console.error("Error al detener escáner:", err);
+              procesarEscaneoQR(decodedText);
+            });
+        } else {
+          console.log(
+            `QR no coincide. Esperado: ${idTienda}, Recibido: ${qrLimpio}`
+          );
+        }
       }
 
       function onScanFailure(error) {
@@ -346,39 +367,43 @@
           </div>
         `;
 
-        setTimeout(() => {
-          // Verificar si el QR corresponde al ID de la tienda
-          const esValido = qrCode.trim() === tiendaActual.id.toString();
+        // Verificar si el QR corresponde al ID de la tienda
+        const esValido = qrCode.trim() === tiendaActual.id.toString();
 
-          console.log("Validación QR:", {
-            qrEscaneado: qrCode,
-            idTienda: tiendaActual.id,
-            esValido: esValido,
-          });
+        console.log("Validación QR:", {
+          qrEscaneado: qrCode,
+          idTienda: tiendaActual.id,
+          esValido: esValido,
+        });
 
-          if (esValido) {
-            // QR válido
-            document.getElementById("scannerStatus").innerHTML = `
-              <div class="flex items-center space-x-3">
-                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                <span class="text-gray-800 font-medium">¡QR verificado correctamente!</span>
-              </div>
-            `;
-            document.getElementById("modalExito").classList.remove("hidden");
-          } else {
-            // QR inválido
-            document.getElementById("scannerStatus").innerHTML = `
-              <div class="flex items-center space-x-3">
-                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                <span class="text-gray-800 font-medium">QR inválido</span>
-              </div>
-            `;
-            console.log(
-              `QR inválido. Esperado: ${tiendaActual.id}, Recibido: ${qrCode}`
-            );
-            document.getElementById("modalError").classList.remove("hidden");
-          }
-        }, 1000);
+        if (esValido) {
+          // QR válido - ir directamente a productos
+          document.getElementById("scannerStatus").innerHTML = `
+            <div class="flex items-center space-x-3">
+              <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span class="text-gray-800 font-medium">¡QR verificado! Redirigiendo...</span>
+            </div>
+          `;
+
+          // Guardar datos y redirigir inmediatamente
+          sessionStorage.setItem("tiendaEnVisita", tiendaActual.id);
+
+          setTimeout(() => {
+            window.location.href = "./productos-visita.html";
+          }, 1000);
+        } else {
+          // QR inválido
+          document.getElementById("scannerStatus").innerHTML = `
+            <div class="flex items-center space-x-3">
+              <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span class="text-gray-800 font-medium">QR inválido</span>
+            </div>
+          `;
+          console.log(
+            `QR inválido. Esperado: ${tiendaActual.id}, Recibido: ${qrCode}`
+          );
+          document.getElementById("modalError").classList.remove("hidden");
+        }
       }
 
       function continuarAProductos() {
