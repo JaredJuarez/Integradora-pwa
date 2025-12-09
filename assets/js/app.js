@@ -301,6 +301,55 @@ document.addEventListener("click", (e) => {
 
 // Inicialización
 document.addEventListener("DOMContentLoaded", async () => {
+  // Registrar Service Worker
+  if ("serviceWorker" in navigator) {
+    try {
+      // Determinar la ruta base correcta
+      const pathSegments = window.location.pathname.split("/");
+      const baseIndex = pathSegments.indexOf("Integradora-pwa");
+      const basePath =
+        baseIndex !== -1
+          ? "/" + pathSegments.slice(1, baseIndex + 1).join("/") + "/"
+          : "/";
+
+      const swPath = basePath + "sw.js";
+      const swScope = basePath;
+
+      console.log("🔧 Registrando SW en:", swPath, "Scope:", swScope);
+
+      const registration = await navigator.serviceWorker.register(swPath, {
+        scope: swScope,
+      });
+
+      console.log("✅ Service Worker registrado:", registration.scope);
+
+      // Verificar actualizaciones
+      registration.addEventListener("updatefound", () => {
+        const newWorker = registration.installing;
+        console.log("🔄 Nueva versión del Service Worker encontrada");
+
+        newWorker.addEventListener("statechange", () => {
+          if (
+            newWorker.state === "installed" &&
+            navigator.serviceWorker.controller
+          ) {
+            console.log(
+              "✨ Nueva versión disponible. Recarga la página para actualizar."
+            );
+            showNotification(
+              "Nueva versión disponible. Recarga la página.",
+              "info"
+            );
+          }
+        });
+      });
+    } catch (error) {
+      console.error("❌ Error al registrar Service Worker:", error);
+    }
+  } else {
+    console.warn("⚠️ Service Workers no soportados en este navegador");
+  }
+
   // Inicializar datos de usuarios y sincronizar con empleados
   if (typeof initDemoUsers === "function") {
     await initDemoUsers();

@@ -101,6 +101,7 @@ async function handleLogin(event) {
         email: email,
         nombre: email.split("@")[0], // Usar la parte del email antes del @ como nombre temporal
         rol: result.data.role.toLowerCase(), // EMPLOYEE -> employee, ADMIN -> admin
+        id: result.data.userId || result.data.id, // Guardar ID del usuario
       },
       token: result.data.token,
       remember: remember,
@@ -118,6 +119,153 @@ async function handleLogin(event) {
     console.log("Sesión creada exitosamente");
 
     showNotificationSafe(`¡Bienvenido!`, "success");
+
+    // Precargar datos para modo offline (solo para empleados)
+    if (session.user.rol === "empleado") {
+      try {
+        console.log("========================================");
+        console.log("🚀 INICIANDO PRECARGA DE DATOS OFFLINE");
+        console.log("========================================");
+
+        // Verificar que offlineManager esté disponible
+        if (typeof offlineManager !== "undefined" && offlineManager) {
+          console.log("✅ offlineManager disponible");
+
+          // Precargar datos completos del empleado
+          try {
+            console.log("👤 Precargando datos del empleado...");
+            // Primero intentar obtener datos desde STORES_COURIER (que incluye assignedCourier)
+            const storesResponse = await apiFetch(
+              API_CONFIG.ENDPOINTS.STORES_COURIER
+            );
+            console.log(
+              "📡 Respuesta tiendas:",
+              storesResponse.status,
+              storesResponse.ok
+            );
+
+            if (storesResponse.ok) {
+              const storesData = await storesResponse.json();
+              console.log("📦 Datos de tiendas recibidos:", storesData);
+
+              if (storesData.data && Array.isArray(storesData.data)) {
+                // Guardar tiendas
+                await offlineManager.cacheStores(storesData.data);
+                console.log("✅ Tiendas precargadas:", storesData.data.length);
+
+                // Extraer y guardar datos del empleado desde la primera tienda (assignedCourier)
+                if (
+                  storesData.data.length > 0 &&
+                  storesData.data[0].assignedCourier
+                ) {
+                  const employeeData = {
+                    id: storesData.data[0].assignedCourier.id,
+                    name: storesData.data[0].assignedCourier.name,
+                    email: storesData.data[0].assignedCourier.email,
+                    role: "EMPLOYEE",
+                    active: true,
+                  };
+
+                  console.log("👤 Datos del empleado extraídos:", employeeData);
+                  await offlineManager.cacheEmployee(employeeData);
+                  console.log(
+                    "✅ Datos del empleado precargados:",
+                    employeeData.name
+                  );
+
+                  // Actualizar sesión con nombre real
+                  session.user.nombre = employeeData.name;
+                  session.user.id = employeeData.id;
+                  Storage.set("session", session);
+                  console.log("✅ Sesión actualizada con datos reales");
+                } else {
+                  console.warn(
+                    "⚠️ No se encontró assignedCourier en las tiendas"
+                  );
+                }
+              }
+            } else {
+              console.error(
+                "❌ Error HTTP al cargar tiendas:",
+                storesResponse.status
+              );
+            }
+          } catch (error) {
+            console.warn(
+              "⚠️ No se pudieron precargar tiendas/empleado:",
+              error.message
+            );
+            console.error("Error completo:", error);
+          }
+
+          // Precargar productos activos
+          try {
+            console.log("📦 Precargando productos...");
+            const productsResponse = await apiFetch(
+              API_CONFIG.ENDPOINTS.PRODUCTS
+            );
+            console.log(
+              "📡 Respuesta productos:",
+              productsResponse.status,
+              productsResponse.ok
+            );
+
+            if (productsResponse.ok) {
+              const productsData = await productsResponse.json();
+              console.log("📦 Datos de productos recibidos:", productsData);
+
+              // Manejar diferentes estructuras de respuesta
+              let productsList = [];
+              if (productsData.data && Array.isArray(productsData.data)) {
+                productsList = productsData.data;
+              } else if (Array.isArray(productsData)) {
+                productsList = productsData;
+              } else {
+                console.warn(
+                  "⚠️ Estructura de respuesta no reconocida:",
+                  productsData
+                );
+              }
+
+              const activeProducts = productsList.filter((p) => p.active);
+              console.log(
+                `📊 Productos activos encontrados: ${activeProducts.length} de ${productsList.length}`
+              );
+
+              if (activeProducts.length > 0) {
+                await offlineManager.cacheProducts(activeProducts);
+                console.log("✅ Productos precargados:", activeProducts.length);
+              } else {
+                console.warn("⚠️ No se encontraron productos activos");
+              }
+            } else {
+              console.error(
+                "❌ Error HTTP al cargar productos:",
+                productsResponse.status
+              );
+            }
+          } catch (error) {
+            console.warn(
+              "⚠️ No se pudieron precargar productos:",
+              error.message
+            );
+            console.error("Error completo:", error);
+          }
+
+          console.log("========================================");
+          console.log("✅ PRECARGA COMPLETADA");
+          console.log("========================================");
+        } else {
+          console.error("❌ offlineManager NO DISPONIBLE");
+          console.log(
+            "Verifica que offline-manager.js esté cargado antes de auth.js"
+          );
+        }
+      } catch (error) {
+        console.error("Error en precarga de datos:", error);
+        // No bloquear el login si falla la precarga
+      }
+    }
 
     // Redirigir según el rol
     console.log("Redirigiendo a dashboard...", session.user.rol);

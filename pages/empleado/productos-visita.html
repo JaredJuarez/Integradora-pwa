@@ -233,6 +233,7 @@
     <!-- Scripts -->
     <script src="../../assets/js/utils.js"></script>
     <script src="../../assets/js/API_BASE.js"></script>
+    <script src="../../assets/js/offline-manager.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
 
@@ -260,35 +261,85 @@
         }
 
         try {
-          // Obtener información de la tienda desde la API
           showLoader();
-          const storeResponse = await apiFetch(
-            API_CONFIG.ENDPOINTS.STORE_BY_ID(tiendaId),
-            {
-              method: "GET",
-            }
-          );
 
-          if (!storeResponse.ok) {
-            throw new Error("Error al cargar la tienda");
+          const isOnline =
+            typeof offlineManager !== "undefined" && offlineManager
+              ? offlineManager.checkOnlineStatus()
+              : navigator.onLine;
+
+          // Obtener información de la tienda - online o desde cache
+          if (isOnline) {
+            try {
+              const storeResponse = await apiFetch(
+                API_CONFIG.ENDPOINTS.STORE_BY_ID(tiendaId),
+                {
+                  method: "GET",
+                }
+              );
+
+              if (storeResponse.ok) {
+                const storeResult = await storeResponse.json();
+                tiendaActual = storeResult.data;
+              } else {
+                throw new Error("Error al cargar la tienda desde API");
+              }
+            } catch (apiError) {
+              console.warn(
+                "Error al cargar tienda desde API, usando cache:",
+                apiError
+              );
+              // Si falla, intentar desde cache
+              if (typeof offlineManager !== "undefined" && offlineManager) {
+                const cachedStores = await offlineManager.getCachedStores();
+                tiendaActual = cachedStores.find(
+                  (s) => s.id === parseInt(tiendaId)
+                );
+              }
+            }
+          } else {
+            // Modo offline: cargar desde cache
+            console.log("📴 Modo offline - cargando tienda desde cache");
+            if (typeof offlineManager !== "undefined" && offlineManager) {
+              const cachedStores = await offlineManager.getCachedStores();
+              tiendaActual = cachedStores.find(
+                (s) => s.id === parseInt(tiendaId)
+              );
+            }
           }
 
-          const storeResult = await storeResponse.json();
-          tiendaActual = storeResult.data;
+          if (!tiendaActual) {
+            throw new Error("No se pudo cargar la tienda");
+          }
 
-          // Obtener el ID del empleado desde assignedCourier
-          const courierId = tiendaActual.assignedCourier?.id;
+          // Obtener el ID del empleado desde assignedCourier o desde cache
+          let courierId = tiendaActual.assignedCourier?.id;
+          let courierName = tiendaActual.assignedCourier?.name;
+          let courierEmail = tiendaActual.assignedCourier?.email;
+
+          // Si no hay courier en la tienda, intentar desde cache del empleado
+          if (
+            !courierId &&
+            typeof offlineManager !== "undefined" &&
+            offlineManager
+          ) {
+            const cachedEmployee = await offlineManager.getCachedEmployee();
+            if (cachedEmployee) {
+              courierId = cachedEmployee.id;
+              courierName = cachedEmployee.name;
+              courierEmail = cachedEmployee.email;
+              console.log("✅ Empleado obtenido desde cache:", courierName);
+            }
+          }
 
           if (!courierId) {
-            throw new Error(
-              "No se pudo obtener el ID del empleado desde la tienda"
-            );
+            throw new Error("No se pudo obtener el ID del empleado");
           }
 
           console.log("✅ Empleado identificado:", {
-            nombre: tiendaActual.assignedCourier.name,
+            nombre: courierName,
             id: courierId,
-            email: tiendaActual.assignedCourier.email,
+            email: courierEmail,
           });
 
           // Actualizar información en la UI
@@ -297,24 +348,106 @@
           document.getElementById("tiendaNombre").textContent =
             tiendaActual.name;
 
-          // Cargar productos desde la API
-          const productsResponse = await apiFetch(
-            API_CONFIG.ENDPOINTS.PRODUCTS,
-            {
-              method: "GET",
-            }
+          // Cargar productos - online o desde cache
+          console.log(
+            "🔍 Estado de conexión:",
+            isOnline ? "Online" : "Offline"
           );
+
+          if (isOnline) {
+            // Modo online: cargar desde API
+            try {
+              console.log("🌐 Intentando cargar productos desde API...");
+              const productsResponse = await apiFetch(
+                API_CONFIG.ENDPOINTS.PRODUCTS,
+                {
+                  method: "GET",
+                }
+              );
+
+              console.log(
+                "📡 Respuesta productos:",
+                productsResponse.status,
+                productsResponse.ok
+              );
+
+              if (productsResponse.ok) {
+                const productsResult = await productsResponse.json();
+                console.log("📦 Datos recibidos:", productsResult);
+
+                // Manejar diferentes estructuras de respuesta
+                let productsList = [];
+                if (productsResult.data && Array.isArray(productsResult.data)) {
+                  productsList = productsResult.data;
+                } else if (Array.isArray(productsResult)) {
+                  productsList = productsResult;
+                } else {
+                  console.warn(
+                    "⚠️ Estructura de respuesta no reconocida:",
+                    productsResult
+                  );
+                }
+
+                productos = productsList.filter((p) => p.active);
+                console.log("✅ Productos activos cargados:", productos.length);
+
+                // Guardar en cache
+                if (
+                  typeof offlineManager !== "undefined" &&
+                  offlineManager &&
+                  productos.length > 0
+                ) {
+                  await offlineManager.cacheProducts(productos);
+                  console.log("✅ Productos guardados en cache");
+                }
+              } else {
+                throw new Error(`HTTP ${productsResponse.status}`);
+              }
+            } catch (error) {
+              console.warn("⚠️ Error al cargar productos desde API:", error);
+              console.log("🔄 Intentando cargar desde cache...");
+              // Si falla online, usar cache
+              if (typeof offlineManager !== "undefined" && offlineManager) {
+                productos = (await offlineManager.getCachedProducts()) || [];
+                console.log("📦 Productos desde cache:", productos.length);
+              }
+            }
+          } else {
+            // Modo offline: cargar desde cache
+            console.log("📴 Modo offline - cargando productos desde cache");
+            if (typeof offlineManager !== "undefined" && offlineManager) {
+              productos = (await offlineManager.getCachedProducts()) || [];
+              console.log(
+                "📦 Productos cargados desde cache:",
+                productos.length
+              );
+            }
+          }
 
           hideLoader();
 
-          if (!productsResponse.ok) {
-            throw new Error("Error al cargar productos");
+          console.log("📊 Resumen de carga de productos:");
+          console.log("  - Productos totales:", productos.length);
+          console.log(
+            "  - Productos activos:",
+            productos.filter((p) => p.active).length
+          );
+          console.log("  - Primer producto:", productos[0]);
+
+          if (!productos || productos.length === 0) {
+            console.error("❌ No hay productos para mostrar");
+            showNotification(
+              `No hay productos disponibles${
+                !isOnline ? " (modo offline)" : ""
+              }`,
+              "warning"
+            );
+          } else {
+            console.log("✅ Llamando a cargarProductos()...");
           }
 
-          const productsResult = await productsResponse.json();
-          productos = productsResult.data.filter((p) => p.active); // Solo productos activos
-
           cargarProductos();
+          console.log("✅ cargarProductos() ejecutado");
         } catch (error) {
           hideLoader();
           console.error("Error al inicializar:", error);
@@ -326,7 +459,17 @@
       }
 
       function cargarProductos() {
+        console.log("🎨 Iniciando cargarProductos()...");
+        console.log("  - productos.length:", productos.length);
+        console.log("  - terminoBusqueda:", terminoBusqueda);
+
         const container = document.getElementById("productosContainer");
+
+        if (!container) {
+          console.error("❌ No se encontró el contenedor productosContainer");
+          return;
+        }
+
         let productosFiltrados = productos;
 
         // Filtrar por término de búsqueda
@@ -337,9 +480,11 @@
             const termino = terminoBusqueda.toLowerCase();
             return nombre.includes(termino) || descripcion.includes(termino);
           });
+          console.log("  - Productos filtrados:", productosFiltrados.length);
         }
 
         if (productosFiltrados.length === 0) {
+          console.warn("⚠️ No hay productos para mostrar");
           container.innerHTML = `
             <div class="stats-card rounded-lg p-6 text-center shadow-lg">
               <i class="fas fa-box-open text-gray-400 text-3xl mb-3"></i>
@@ -352,6 +497,12 @@
           `;
           return;
         }
+
+        console.log(
+          "✅ Generando HTML para",
+          productosFiltrados.length,
+          "productos..."
+        );
 
         container.innerHTML = productosFiltrados
           .map((producto) => {
@@ -408,6 +559,9 @@
           `;
           })
           .join("");
+
+        console.log("✅ HTML insertado en el contenedor");
+        console.log("  - Elementos creados:", container.children.length);
       }
 
       function buscarProductos() {
@@ -588,7 +742,7 @@
             quantity: item.cantidad,
           }));
 
-          // Crear el pedido primero
+          // Crear el pedido
           const orderData = {
             courierId: parseInt(courierId),
             storeId: parseInt(tiendaActual.id),
@@ -596,7 +750,7 @@
             location: location, // "latitud,longitud"
           };
 
-          console.log("📦 Creando pedido:", {
+          console.log("📦 Datos del pedido:", {
             courierId: orderData.courierId,
             storeId: orderData.storeId,
             cantidadItems: orderData.items.length,
@@ -604,39 +758,87 @@
             items: orderData.items,
           });
 
-          const response = await apiFetch(API_CONFIG.ENDPOINTS.ORDERS, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(orderData),
-          });
+          // Verificar si estamos online u offline
+          const isOnline =
+            typeof offlineManager !== "undefined" && offlineManager
+              ? offlineManager.checkOnlineStatus()
+              : navigator.onLine;
+
+          let orderId;
+
+          if (isOnline) {
+            // MODO ONLINE: Enviar al servidor
+            console.log("🌐 MODO ONLINE: Enviando pedido al servidor...");
+
+            try {
+              const response = await apiFetch(API_CONFIG.ENDPOINTS.ORDERS, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(orderData),
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("❌ Error al crear pedido:", errorData);
+
+                if (errorData.trace) {
+                  console.error("🔥 Stack trace completo:", errorData.trace);
+                }
+
+                throw new Error(
+                  errorData.message || "Error al crear el pedido"
+                );
+              }
+
+              const result = await response.json();
+              orderId = result.data?.id || result.id;
+
+              if (!orderId) {
+                throw new Error("No se recibió el ID del pedido");
+              }
+
+              console.log("✅ Pedido creado en servidor con ID:", orderId);
+            } catch (apiError) {
+              // Si falla online, cambiar a modo offline
+              console.warn(
+                "⚠️ Error al enviar pedido online, cambiando a modo offline:",
+                apiError
+              );
+
+              if (typeof offlineManager !== "undefined" && offlineManager) {
+                orderId = await offlineManager.savePendingOrder(orderData);
+                showNotification(
+                  "Pedido guardado localmente. Se enviará cuando haya conexión.",
+                  "info"
+                );
+              } else {
+                throw new Error("No se pudo guardar el pedido");
+              }
+            }
+          } else {
+            // MODO OFFLINE: Guardar localmente
+            console.log("📴 MODO OFFLINE: Guardando pedido localmente...");
+
+            if (typeof offlineManager !== "undefined" && offlineManager) {
+              orderId = await offlineManager.savePendingOrder(orderData);
+              console.log("✅ Pedido guardado localmente con ID:", orderId);
+              showNotification(
+                "📴 Modo offline: Pedido guardado. Se enviará cuando haya conexión.",
+                "info"
+              );
+            } else {
+              throw new Error("offlineManager no disponible");
+            }
+          }
 
           hideLoader();
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("❌ Error al crear pedido:", errorData);
-
-            if (errorData.trace) {
-              console.error("🔥 Stack trace completo:", errorData.trace);
-            }
-
-            throw new Error(errorData.message || "Error al crear el pedido");
-          }
-
-          const result = await response.json();
-          const orderId = result.data?.id || result.id;
-
-          if (!orderId) {
-            throw new Error("No se recibió el ID del pedido");
-          }
-
-          console.log("✅ Pedido creado con ID:", orderId);
 
           // Guardar datos para la siguiente pantalla (incluyendo orderId)
           const datosVisita = {
             orderId: orderId,
+            isOfflineOrder: !isOnline, // Flag para saber si es offline
             tiendaId: parseInt(tiendaActual.id),
             tiendaNombre: tiendaActual.name,
             empleadoId: courierId,

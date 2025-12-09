@@ -284,6 +284,7 @@
     <!-- Scripts -->
     <script src="../../assets/js/utils.js"></script>
     <script src="../../assets/js/API_BASE.js"></script>
+    <script src="../../assets/js/offline-manager.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
 
@@ -623,6 +624,7 @@
           showLoader();
 
           const orderId = datosVisita.orderId;
+          const isOfflineOrder = datosVisita.isOfflineOrder;
 
           if (!orderId) {
             hideLoader();
@@ -631,58 +633,110 @@
             return;
           }
 
-          console.log("📸 Subiendo imagen para pedido ID:", orderId);
+          console.log("📸 Procesando imagen para pedido ID:", orderId);
+          console.log("📴 Pedido offline:", isOfflineOrder);
 
           // Extraer base64 puro (sin el prefijo data:image/jpeg;base64,)
           const base64Puro = extraerBase64Puro(fotoCapturada);
 
-          // Convertir base64 puro a Blob
-          const blob = base64ToBlob(base64Puro);
+          // Verificar si estamos online u offline
+          const isOnline =
+            typeof offlineManager !== "undefined" && offlineManager
+              ? offlineManager.checkOnlineStatus()
+              : navigator.onLine;
 
-          console.log("📦 Datos de imagen:", {
-            orderId: orderId,
-            tamañoBlob: `${(blob.size / 1024).toFixed(2)} KB`,
-            tipoBlob: blob.type,
-          });
+          if (isOnline && !isOfflineOrder) {
+            // MODO ONLINE: Subir imagen al servidor
+            console.log("🌐 MODO ONLINE: Subiendo imagen al servidor...");
 
-          // Crear FormData con el archivo
-          const formData = new FormData();
-          formData.append("file", blob, "estante.jpg");
+            // Convertir base64 puro a Blob
+            const blob = base64ToBlob(base64Puro);
 
-          console.log("📤 Enviando FormData con archivo:", {
-            hasFile: formData.has("file"),
-            fileName: "estante.jpg",
-          });
+            console.log("📦 Datos de imagen:", {
+              orderId: orderId,
+              tamañoBlob: `${(blob.size / 1024).toFixed(2)} KB`,
+              tipoBlob: blob.type,
+            });
 
-          // Subir imagen al endpoint /api/orders/img/{id}
-          const response = await apiFetch(
-            `${API_CONFIG.ENDPOINTS.ORDERS}/img/${orderId}`,
-            {
-              method: "POST",
-              // NO enviar Content-Type, el navegador lo configurará automáticamente con boundary
-              body: formData,
+            // Crear FormData con el archivo
+            const formData = new FormData();
+            formData.append("file", blob, "estante.jpg");
+
+            console.log("📤 Enviando FormData con archivo:", {
+              hasFile: formData.has("file"),
+              fileName: "estante.jpg",
+            });
+
+            try {
+              // Subir imagen al endpoint /api/orders/img/{id}
+              const response = await apiFetch(
+                `${API_CONFIG.ENDPOINTS.ORDERS}/img/${orderId}`,
+                {
+                  method: "POST",
+                  // NO enviar Content-Type, el navegador lo configurará automáticamente con boundary
+                  body: formData,
+                }
+              );
+
+              if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error("❌ Error al subir imagen:", errorData);
+
+                if (errorData.trace) {
+                  console.error(
+                    "🔥 Stack trace del servidor:",
+                    errorData.trace
+                  );
+                }
+
+                const errorMsg =
+                  errorData.message ||
+                  errorData.error ||
+                  "Error desconocido del servidor";
+                throw new Error(errorMsg);
+              }
+
+              const result = await response.json();
+              console.log("✅ Imagen subida correctamente:", result);
+
+              showNotification("¡Visita completada exitosamente!", "success");
+            } catch (uploadError) {
+              console.warn(
+                "⚠️ Error al subir imagen online, guardando offline:",
+                uploadError
+              );
+
+              // Si falla, guardar offline
+              if (typeof offlineManager !== "undefined" && offlineManager) {
+                await offlineManager.savePendingImage(orderId, base64Puro);
+                showNotification(
+                  "Imagen guardada localmente. Se subirá cuando haya conexión.",
+                  "info"
+                );
+              } else {
+                throw uploadError;
+              }
             }
-          );
+          } else {
+            // MODO OFFLINE o PEDIDO OFFLINE: Guardar imagen localmente
+            console.log("📴 MODO OFFLINE: Guardando imagen localmente...");
 
-          hideLoader();
-
-          if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            console.error("❌ Error al subir imagen:", errorData);
-
-            if (errorData.trace) {
-              console.error("🔥 Stack trace del servidor:", errorData.trace);
+            if (typeof offlineManager !== "undefined" && offlineManager) {
+              await offlineManager.savePendingImage(orderId, base64Puro);
+              console.log(
+                "✅ Imagen guardada localmente para pedido:",
+                orderId
+              );
+              showNotification(
+                "📴 Imagen guardada. Se subirá cuando haya conexión.",
+                "info"
+              );
+            } else {
+              throw new Error("offlineManager no disponible");
             }
-
-            const errorMsg =
-              errorData.message ||
-              errorData.error ||
-              "Error desconocido del servidor";
-            throw new Error(errorMsg);
           }
 
-          const result = await response.json();
-          console.log("✅ Imagen subida correctamente:", result);
+          hideLoader();
 
           // Cerrar modal
           document.getElementById("modalConfirmacion").classList.add("hidden");
@@ -691,8 +745,6 @@
           sessionStorage.removeItem("tiendaEnVisita");
           sessionStorage.removeItem("datosVisitaActual");
           sessionStorage.removeItem("tiendaAVisitar");
-
-          showNotification("¡Visita completada exitosamente!", "success");
 
           // Redirigir al dashboard
           setTimeout(() => {

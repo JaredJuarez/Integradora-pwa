@@ -117,6 +117,32 @@
         </div>
       </div>
 
+      <!-- Badge de pedidos pendientes offline -->
+      <div
+        id="pendingOrdersBadge"
+        class="hidden bg-yellow-100 border-l-4 border-yellow-500 rounded-lg p-4 mb-4 shadow-md"
+      >
+        <div class="flex items-center space-x-3">
+          <i class="fas fa-clock text-yellow-600 text-xl"></i>
+          <div class="flex-1">
+            <p class="text-gray-800 font-medium">
+              <span id="pendingOrdersCount">0</span> pedido(s) pendiente(s) de
+              sincronizar
+            </p>
+            <p class="text-sm text-gray-600">
+              Se enviarán automáticamente cuando haya conexión
+            </p>
+          </div>
+          <button
+            onclick="sincronizarManual()"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium"
+          >
+            <i class="fas fa-sync-alt mr-1"></i>
+            Sincronizar
+          </button>
+        </div>
+      </div>
+
       <!-- Lista de Tiendas -->
       <div class="space-y-4">
         <h2 class="text-white text-lg font-bold mb-3">
@@ -173,6 +199,7 @@
     <!-- Scripts -->
     <script src="../../assets/js/utils.js"></script>
     <script src="../../assets/js/API_BASE.js"></script>
+    <script src="../../assets/js/offline-manager.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
 
@@ -194,8 +221,167 @@
         document.getElementById("employeeName").textContent =
           empleadoActual.nombre || empleadoActual.email.split("@")[0];
 
+        // Precargar todos los datos necesarios
+        await precargarDatosOffline();
+
         // Cargar datos
         await cargarTiendasAsignadas();
+
+        // Mostrar badge de pedidos pendientes
+        await mostrarPedidosPendientes();
+      }
+
+      async function precargarDatosOffline() {
+        if (typeof offlineManager === "undefined" || !offlineManager) {
+          console.warn("⚠️ offlineManager no disponible");
+          return;
+        }
+
+        try {
+          console.log("========================================");
+          console.log("🚀 PRECARGANDO DATOS EN DASHBOARD");
+          console.log("========================================");
+
+          const isOnline = offlineManager.checkOnlineStatus();
+
+          if (!isOnline) {
+            console.log("📴 Modo offline - usando datos en caché");
+            return;
+          }
+
+          // Precargar tiendas y datos del empleado
+          try {
+            console.log("🏪 Precargando tiendas...");
+            const storesResponse = await apiFetch(
+              API_CONFIG.ENDPOINTS.STORES_COURIER
+            );
+            console.log(
+              "📡 Respuesta tiendas:",
+              storesResponse.status,
+              storesResponse.ok
+            );
+
+            if (storesResponse.ok) {
+              const storesData = await storesResponse.json();
+              console.log("📦 Datos de tiendas recibidos:", storesData);
+
+              if (storesData.data && Array.isArray(storesData.data)) {
+                await offlineManager.cacheStores(storesData.data);
+                console.log("✅ Tiendas precargadas:", storesData.data.length);
+
+                // Extraer datos del empleado
+                if (
+                  storesData.data.length > 0 &&
+                  storesData.data[0].assignedCourier
+                ) {
+                  const employeeData = {
+                    id: storesData.data[0].assignedCourier.id,
+                    name: storesData.data[0].assignedCourier.name,
+                    email: storesData.data[0].assignedCourier.email,
+                    role: "EMPLOYEE",
+                    active: true,
+                  };
+
+                  await offlineManager.cacheEmployee(employeeData);
+                  console.log("✅ Empleado precargado:", employeeData.name);
+                }
+              }
+            }
+          } catch (error) {
+            console.warn("⚠️ Error al precargar tiendas:", error);
+          }
+
+          // Precargar productos
+          try {
+            console.log("📦 Precargando productos...");
+            const productsResponse = await apiFetch(
+              API_CONFIG.ENDPOINTS.PRODUCTS
+            );
+            console.log(
+              "📡 Respuesta productos:",
+              productsResponse.status,
+              productsResponse.ok
+            );
+
+            if (productsResponse.ok) {
+              const productsData = await productsResponse.json();
+              console.log("📦 Datos de productos recibidos:", productsData);
+
+              let productsList = [];
+              if (productsData.data && Array.isArray(productsData.data)) {
+                productsList = productsData.data;
+              } else if (Array.isArray(productsData)) {
+                productsList = productsData;
+              }
+
+              const activeProducts = productsList.filter((p) => p.active);
+              console.log(
+                `📊 Productos activos: ${activeProducts.length} de ${productsList.length}`
+              );
+
+              if (activeProducts.length > 0) {
+                await offlineManager.cacheProducts(activeProducts);
+                console.log("✅ Productos precargados:", activeProducts.length);
+              } else {
+                console.warn("⚠️ No se encontraron productos activos");
+              }
+            }
+          } catch (error) {
+            console.warn("⚠️ Error al precargar productos:", error);
+          }
+
+          console.log("========================================");
+          console.log("✅ PRECARGA COMPLETADA EN DASHBOARD");
+          console.log("========================================");
+        } catch (error) {
+          console.error("❌ Error en precarga:", error);
+        }
+      }
+
+      async function mostrarPedidosPendientes() {
+        if (typeof offlineManager === "undefined" || !offlineManager) {
+          return;
+        }
+
+        try {
+          const pendingOrders = await offlineManager.getPendingOrders();
+          const badge = document.getElementById("pendingOrdersBadge");
+          const countElement = document.getElementById("pendingOrdersCount");
+
+          if (pendingOrders && pendingOrders.length > 0) {
+            countElement.textContent = pendingOrders.length;
+            badge.classList.remove("hidden");
+            console.log(
+              `📋 ${pendingOrders.length} pedidos pendientes de sincronizar`
+            );
+          } else {
+            badge.classList.add("hidden");
+          }
+        } catch (error) {
+          console.error("Error al cargar pedidos pendientes:", error);
+        }
+      }
+
+      async function sincronizarManual() {
+        if (typeof offlineManager === "undefined" || !offlineManager) {
+          showNotification("Sistema offline no disponible", "error");
+          return;
+        }
+
+        console.log("🔄 Sincronización manual iniciada");
+
+        try {
+          await offlineManager.syncPendingOrders();
+
+          // Recargar badge después de sincronizar
+          await mostrarPedidosPendientes();
+
+          // Recargar tiendas
+          await cargarTiendasAsignadas();
+        } catch (error) {
+          console.error("Error en sincronización manual:", error);
+          showNotification("Error al sincronizar: " + error.message, "error");
+        }
       }
 
       async function cargarEstadisticas() {
@@ -216,25 +402,64 @@
           }
 
           showLoader();
-          const response = await apiFetch(API_CONFIG.ENDPOINTS.STORES_COURIER, {
-            method: "GET",
-          });
+
+          let tiendas = [];
+          const isOnline =
+            typeof offlineManager !== "undefined" && offlineManager
+              ? offlineManager.checkOnlineStatus()
+              : navigator.onLine;
+
+          if (isOnline) {
+            // Modo online: intentar cargar desde API
+            try {
+              const response = await apiFetch(
+                API_CONFIG.ENDPOINTS.STORES_COURIER,
+                {
+                  method: "GET",
+                }
+              );
+
+              if (response.ok) {
+                const result = await response.json();
+                tiendas = result.data || result;
+
+                // Guardar en cache para uso offline
+                if (typeof offlineManager !== "undefined" && offlineManager) {
+                  await offlineManager.cacheStores(tiendas);
+                  console.log("✅ Tiendas guardadas en cache");
+                }
+              }
+            } catch (error) {
+              console.warn(
+                "Error al cargar desde API, intentando cache:",
+                error
+              );
+              // Si falla online, intentar cache
+              if (typeof offlineManager !== "undefined" && offlineManager) {
+                tiendas = (await offlineManager.getCachedStores()) || [];
+              }
+            }
+          } else {
+            // Modo offline: cargar desde cache
+            console.log("📴 Modo offline - cargando tiendas desde cache");
+            if (typeof offlineManager !== "undefined" && offlineManager) {
+              tiendas = (await offlineManager.getCachedStores()) || [];
+              console.log("Tiendas desde cache:", tiendas);
+            }
+          }
 
           hideLoader();
 
-          if (!response.ok) {
-            throw new Error("Error al cargar tiendas");
-          }
-
-          const tiendas = await response.json();
-          console.log("Tiendas recibidas:", tiendas);
+          console.log("Tiendas a mostrar:", tiendas);
           const container = document.getElementById("tiendasContainer");
 
-          if (tiendas.length === 0) {
+          if (!tiendas || tiendas.length === 0) {
             container.innerHTML = `
               <div class="bg-white rounded-lg p-6 text-center">
                 <i class="fas fa-calendar-times text-gray-400 text-3xl mb-3"></i>
-                <p class="text-gray-600">No hay tiendas asignadas para hoy</p>
+                <p class="text-gray-600">No hay tiendas asignadas${
+                  !isOnline ? " (modo offline)" : ""
+                }</p>
               </div>
             `;
             return;

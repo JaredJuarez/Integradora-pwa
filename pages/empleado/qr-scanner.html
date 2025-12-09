@@ -219,6 +219,7 @@
     <!-- Scripts -->
     <script src="../../assets/js/utils.js"></script>
     <script src="../../assets/js/API_BASE.js"></script>
+    <script src="../../assets/js/offline-manager.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
 
@@ -230,6 +231,33 @@
       let empleadoActual;
       let html5QrCode;
       let escaneoEnProceso = false;
+
+      /**
+       * Obtiene tienda desde caché local (IndexedDB)
+       * CP-07.1: Permite escaneo QR offline
+       */
+      async function obtenerTiendaDesdeCache(tiendaId) {
+        try {
+          if (!offlineManager || !offlineManager.db) {
+            console.warn("⚠️ OfflineManager no disponible");
+            return null;
+          }
+
+          const cachedStores = await offlineManager.getCachedStores();
+          const tienda = cachedStores.find((t) => t.id == tiendaId);
+
+          if (tienda) {
+            console.log("✅ Tienda obtenida desde caché:", tienda.name);
+            return tienda;
+          } else {
+            console.warn("⚠️ Tienda no encontrada en caché local");
+            return null;
+          }
+        } catch (error) {
+          console.error("❌ Error al obtener tienda desde caché:", error);
+          return null;
+        }
+      }
 
       async function initQRScanner() {
         try {
@@ -244,22 +272,52 @@
             return;
           }
 
-          // Obtener información de la tienda desde la API
-          showLoader();
-          const response = await apiFetch(
-            API_CONFIG.ENDPOINTS.STORE_BY_ID(tiendaId),
-            {
-              method: "GET",
-            }
-          );
-          hideLoader();
+          // CP-07.3: Verificar si hay conexión
+          const isOnline = offlineManager
+            ? offlineManager.checkOnlineStatus()
+            : navigator.onLine;
 
-          if (!response.ok) {
-            throw new Error("Error al cargar información de la tienda");
+          if (!isOnline) {
+            showNotification(
+              "Modo offline: Usando datos almacenados",
+              "warning"
+            );
           }
 
-          const result = await response.json();
-          tiendaActual = result.data;
+          showLoader();
+
+          // Intentar obtener tienda desde API o caché
+          if (isOnline) {
+            try {
+              // CON CONEXIÓN: Obtener desde API
+              const response = await apiFetch(
+                API_CONFIG.ENDPOINTS.STORE_BY_ID(tiendaId),
+                { method: "GET" }
+              );
+
+              if (response.ok) {
+                const result = await response.json();
+                tiendaActual = result.data;
+              } else {
+                throw new Error("Error en respuesta del servidor");
+              }
+            } catch (apiError) {
+              console.warn("⚠️ API falló, intentando caché:", apiError);
+              // Si API falla, intentar caché
+              tiendaActual = await obtenerTiendaDesdeCache(tiendaId);
+            }
+          } else {
+            // SIN CONEXIÓN: Obtener desde caché (CP-07.1, CP-07.3)
+            tiendaActual = await obtenerTiendaDesdeCache(tiendaId);
+          }
+
+          hideLoader();
+
+          if (!tiendaActual) {
+            throw new Error(
+              "No se pudo cargar la tienda. Sin datos disponibles offline."
+            );
+          }
 
           // Actualizar información en la UI
           document.getElementById("nombreTienda").textContent =
@@ -269,11 +327,17 @@
           document.getElementById("tiendaDireccion").textContent =
             tiendaActual.address;
 
+          console.log("✅ Tienda cargada:", {
+            id: tiendaActual.id,
+            nombre: tiendaActual.name,
+            modo: isOnline ? "online" : "offline",
+          });
+
           // Iniciar escáner QR
           iniciarEscanerQR();
         } catch (error) {
           hideLoader();
-          console.error("Error al inicializar:", error);
+          console.error("❌ Error al inicializar:", error);
           showNotification(
             "Error al cargar la tienda: " + error.message,
             "error"
