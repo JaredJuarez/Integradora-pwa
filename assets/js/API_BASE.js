@@ -1,7 +1,7 @@
 // API_BASE.js - Configuración de endpoints de la API
 
 const API_CONFIG = {
-  BASE_URL: "http://localhost:8080",
+  BASE_URL: "http://192.168.1.167:8080",
   ENDPOINTS: {
     // Auth endpoints
     LOGIN: "/api/auth",
@@ -44,9 +44,12 @@ function getApiUrl(endpoint) {
 async function apiFetch(endpoint, options = {}) {
   const url = getApiUrl(endpoint);
 
+  // Si el body es FormData, NO agregar Content-Type (el navegador lo configurará automáticamente)
+  const isFormData = options.body instanceof FormData;
+
   const defaultOptions = {
     headers: {
-      ...API_CONFIG.DEFAULT_HEADERS,
+      ...(isFormData ? {} : API_CONFIG.DEFAULT_HEADERS), // No agregar headers si es FormData
       ...(options.headers || {}),
     },
     ...options,

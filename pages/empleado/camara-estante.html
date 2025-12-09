@@ -538,6 +538,26 @@
         return dataUrl;
       }
 
+      function base64ToBlob(base64, mimeType = "image/jpeg") {
+        // Decodificar base64 a binario
+        const byteCharacters = atob(base64);
+        const byteArrays = [];
+
+        for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+          const slice = byteCharacters.slice(offset, offset + 512);
+
+          const byteNumbers = new Array(slice.length);
+          for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+          }
+
+          const byteArray = new Uint8Array(byteNumbers);
+          byteArrays.push(byteArray);
+        }
+
+        return new Blob(byteArrays, { type: mimeType });
+      }
+
       function retomarFoto() {
         // Volver a la vista de cámara
         document.getElementById("photoPreview").classList.add("hidden");
@@ -602,106 +622,67 @@
         try {
           showLoader();
 
-          // Obtener el ID correcto del empleado
-          const courierId =
-            datosVisita.empleadoId ||
-            empleadoActual?.userId ||
-            empleadoActual?.id;
+          const orderId = datosVisita.orderId;
 
-          if (!courierId) {
+          if (!orderId) {
             hideLoader();
-            console.error("❌ No se pudo obtener el ID del empleado:", {
-              empleadoActual,
-              datosVisita,
-            });
-            showNotification(
-              "Error: No se pudo identificar al empleado",
-              "error"
-            );
+            console.error("❌ No se encontró el ID del pedido:", datosVisita);
+            showNotification("Error: No se encontró el ID del pedido", "error");
             return;
           }
 
-          // Preparar items (puede estar vacío si no hay productos)
-          const items = (datosVisita.productos || []).map((producto) => ({
-            productId: producto.id,
-            quantity: producto.cantidad,
-          }));
+          console.log("📸 Subiendo imagen para pedido ID:", orderId);
 
-          // Intentar con base64 puro (sin prefijo data:image)
+          // Extraer base64 puro (sin el prefijo data:image/jpeg;base64,)
           const base64Puro = extraerBase64Puro(fotoCapturada);
 
-          // Preparar datos del pedido
-          const orderData = {
-            courierId: parseInt(courierId),
-            storeId: parseInt(datosVisita.tiendaId),
-            photoUrl: base64Puro, // Solo base64 sin prefijo
-            items: items,
-          };
+          // Convertir base64 puro a Blob
+          const blob = base64ToBlob(base64Puro);
 
-          console.log("📦 Enviando pedido:", {
-            courierId: orderData.courierId,
-            storeId: orderData.storeId,
-            cantidadProductos: orderData.items.length,
-            tamañoFoto: `${(base64Puro.length / 1024).toFixed(2)} KB`,
-            tamañoOriginal: `${(fotoCapturada.length / 1024).toFixed(2)} KB`,
-            tieneItems: orderData.items.length > 0,
-            formatoFoto: fotoCapturada.startsWith("data:")
-              ? "Con prefijo data:"
-              : "Base64 puro",
+          console.log("📦 Datos de imagen:", {
+            orderId: orderId,
+            tamañoBlob: `${(blob.size / 1024).toFixed(2)} KB`,
+            tipoBlob: blob.type,
           });
 
-          // Log completo para debugging
-          console.log("📋 Estructura completa del pedido:", {
-            courierId: orderData.courierId,
-            storeId: orderData.storeId,
-            photoUrl:
-              orderData.photoUrl.substring(0, 50) + "... (base64 truncado)",
-            items: orderData.items,
+          // Crear FormData con el archivo
+          const formData = new FormData();
+          formData.append("file", blob, "estante.jpg");
+
+          console.log("📤 Enviando FormData con archivo:", {
+            hasFile: formData.has("file"),
+            fileName: "estante.jpg",
           });
 
-          console.log(
-            "🔍 Items detallados:",
-            JSON.stringify(orderData.items, null, 2)
+          // Subir imagen al endpoint /api/orders/img/{id}
+          const response = await apiFetch(
+            `${API_CONFIG.ENDPOINTS.ORDERS}/img/${orderId}`,
+            {
+              method: "POST",
+              // NO enviar Content-Type, el navegador lo configurará automáticamente con boundary
+              body: formData,
+            }
           );
-          console.log("🔍 Datos de visita originales:", datosVisita);
-          console.log(
-            "🖼️ Preview de imagen (primeros 100 chars):",
-            orderData.photoUrl.substring(0, 100)
-          );
-
-          // Enviar a la API
-          const response = await apiFetch(API_CONFIG.ENDPOINTS.ORDERS, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(orderData),
-          });
 
           hideLoader();
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            console.error("❌ Error del servidor:", errorData);
+            console.error("❌ Error al subir imagen:", errorData);
 
-            // Si hay trace en el error, mostrarlo
             if (errorData.trace) {
               console.error("🔥 Stack trace del servidor:", errorData.trace);
             }
 
-            // Mostrar error detallado
             const errorMsg =
               errorData.message ||
               errorData.error ||
               "Error desconocido del servidor";
-            throw new Error(
-              errorMsg +
-                "\n\n⚠️ REVISA LOS LOGS DEL SERVIDOR SPRING BOOT para ver el error real."
-            );
+            throw new Error(errorMsg);
           }
 
           const result = await response.json();
-          console.log("✅ Pedido creado:", result);
+          console.log("✅ Imagen subida correctamente:", result);
 
           // Cerrar modal
           document.getElementById("modalConfirmacion").classList.add("hidden");
