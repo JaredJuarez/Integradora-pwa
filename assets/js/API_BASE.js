@@ -19,6 +19,7 @@ const API_CONFIG = {
     // Store endpoints
     STORES: "/api/stores",
     STORE_BY_ID: (id) => `/api/stores/${id}`,
+    STORES_COURIER: "/api/stores/courier",
 
     // Order endpoints
     ORDERS: "/api/orders",
