@@ -15,7 +15,7 @@
 
     <style>
       body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #1f2937 0%, #374151 100%);
         min-height: 100vh;
       }
 
@@ -283,79 +283,106 @@
 
     <!-- Scripts -->
     <script src="../../assets/js/utils.js"></script>
-    <script src="../../assets/js/mock-api.js"></script>
-    <script src="../../assets/js/app.js"></script>
+    <script src="../../assets/js/API_BASE.js"></script>
     <script src="../../assets/js/auth.js"></script>
-    <script src="../../assets/js/employee-data.js"></script>
+    <script src="../../assets/js/app.js"></script>
 
     <script>
       // Proteger página solo para empleados
       protectPage("empleado");
 
-      let tiendaActual;
       let empleadoActual;
       let datosVisita;
-      let fotoCapturada = null;
-      let flashActivo = false;
+      let fotoCapturada = null; // Base64 string
+      let stream = null;
+      let videoElement = null;
+      let usarCamaraFrontal = false;
 
-      function initCamara() {
+      async function initCamara() {
         empleadoActual = getCurrentUser();
 
         // Recuperar datos de la visita
         const datosVisitaJSON = sessionStorage.getItem("datosVisitaActual");
         if (!datosVisitaJSON) {
-          alert("No hay datos de visita");
-          window.location.href = "./dashboard.html";
+          showNotification("No hay datos de visita", "error");
+          setTimeout(() => {
+            window.location.href = "./dashboard.html";
+          }, 2000);
           return;
         }
 
         datosVisita = JSON.parse(datosVisitaJSON);
 
-        // Obtener información de la tienda
-        const tiendas = getTiendasAsignadasEmpleado(empleadoActual.id);
-        tiendaActual = tiendas.find((t) => t.id === datosVisita.tiendaId);
-
-        if (!tiendaActual) {
-          alert("Tienda no encontrada");
-          window.location.href = "./dashboard.html";
-          return;
-        }
-
         // Actualizar información en la UI
         document.getElementById("nombreTienda").textContent =
-          tiendaActual.nombre;
+          datosVisita.tiendaNombre;
 
         // Mostrar resumen de productos
         mostrarResumenProductos();
 
-        // Simular inicialización de cámara
-        setTimeout(() => {
-          document.getElementById("cameraView").innerHTML = `
-            <div class="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center relative">
-              <div class="text-white text-center">
-                <i class="fas fa-camera text-3xl mb-2 opacity-75"></i>
-                <p class="text-xs opacity-50">Vista de cámara - Apunta al estante</p>
-              </div>
+        // Iniciar cámara real
+        await iniciarCamaraReal();
+      }
+
+      async function iniciarCamaraReal() {
+        try {
+          console.log("📷 Iniciando cámara real...");
+
+          // Solicitar permisos de cámara
+          const constraints = {
+            video: {
+              facingMode: usarCamaraFrontal ? "user" : "environment",
+              width: { ideal: 1920 },
+              height: { ideal: 1080 },
+            },
+            audio: false,
+          };
+
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+          // Crear elemento video
+          const cameraView = document.getElementById("cameraView");
+          cameraView.innerHTML = `
+            <video id="videoPreview" autoplay playsinline class="w-full h-full object-cover"></video>
+            
+            <!-- Controles de cámara -->
+            <div class="camera-controls">
+              <button onclick="cambiarCamara()" class="w-12 h-12 bg-black bg-opacity-50 rounded-full flex items-center justify-center text-white">
+                <i class="fas fa-sync-alt text-lg"></i>
+              </button>
               
-              <!-- Controles de cámara -->
-              <div class="camera-controls">
-                <button onclick="alternarFlash()" id="flashBtn" class="w-12 h-12 bg-black bg-opacity-50 rounded-full flex items-center justify-center text-white">
-                  <i class="fas fa-bolt text-lg ${
-                    flashActivo ? "text-yellow-400" : ""
-                  }"></i>
-                </button>
-                
-                <button onclick="tomarFoto()" id="captureBtn" class="capture-button">
-                  <i class="fas fa-camera text-gray-800 text-xl"></i>
-                </button>
-                
-                <button onclick="cambiarCamara()" class="w-12 h-12 bg-black bg-opacity-50 rounded-full flex items-center justify-center text-white">
-                  <i class="fas fa-sync-alt text-lg"></i>
-                </button>
-              </div>
+              <button onclick="tomarFoto()" id="captureBtn" class="capture-button">
+                <i class="fas fa-camera text-gray-800 text-xl"></i>
+              </button>
+              
+              <div class="w-12 h-12"></div>
             </div>
           `;
-        }, 1000);
+
+          videoElement = document.getElementById("videoPreview");
+          videoElement.srcObject = stream;
+
+          console.log("✅ Cámara iniciada correctamente");
+          showNotification("Cámara lista", "success");
+        } catch (error) {
+          console.error("❌ Error al iniciar cámara:", error);
+          showNotification(
+            "Error al acceder a la cámara: " + error.message,
+            "error"
+          );
+
+          // Mostrar mensaje de error en la UI
+          document.getElementById("cameraView").innerHTML = `
+            <div class="text-white text-center p-6">
+              <i class="fas fa-exclamation-triangle text-4xl mb-3 text-red-400"></i>
+              <p class="text-sm mb-2">No se pudo acceder a la cámara</p>
+              <p class="text-xs opacity-75">${error.message}</p>
+              <button onclick="iniciarCamaraReal()" class="mt-4 bg-white text-gray-800 px-4 py-2 rounded-lg text-sm">
+                Reintentar
+              </button>
+            </div>
+          `;
+        }
       }
 
       function mostrarResumenProductos() {
@@ -377,9 +404,9 @@
             ${datosVisita.productos
               .map(
                 (producto) => `
-              <div class="flex justify-between items-center">
-                <span>${producto.nombre}</span>
-                <span class="font-medium">${producto.cantidad} unidades</span>
+              <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                <span class="font-medium">${producto.nombre}</span>
+                <span class="text-gray-600">${producto.cantidad} unidades</span>
               </div>
             `
               )
@@ -391,67 +418,124 @@
         `;
       }
 
-      function alternarFlash() {
-        flashActivo = !flashActivo;
-        const flashBtn = document.getElementById("flashBtn");
-        const icon = flashBtn.querySelector("i");
+      async function cambiarCamara() {
+        // Detener stream actual
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
 
-        if (flashActivo) {
-          icon.classList.add("text-yellow-400");
-          showNotificationSafe("Flash activado", "info");
-        } else {
-          icon.classList.remove("text-yellow-400");
-          showNotificationSafe("Flash desactivado", "info");
+        // Cambiar entre cámara frontal y trasera
+        usarCamaraFrontal = !usarCamaraFrontal;
+        showNotification(
+          usarCamaraFrontal
+            ? "Cambiando a cámara frontal..."
+            : "Cambiando a cámara trasera...",
+          "info"
+        );
+
+        await iniciarCamaraReal();
+      }
+
+      async function tomarFoto() {
+        if (!videoElement) {
+          showNotification("Cámara no disponible", "error");
+          return;
+        }
+
+        try {
+          console.log("📸 Tomando foto...");
+
+          const captureBtn = document.getElementById("captureBtn");
+          captureBtn.classList.add("capturing");
+
+          // Crear canvas para capturar frame del video
+          const canvas = document.createElement("canvas");
+          canvas.width = videoElement.videoWidth;
+          canvas.height = videoElement.videoHeight;
+
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
+
+          // Comprimir imagen con más compresión para reducir tamaño
+          const imagenComprimida = await comprimirImagen(canvas, 800, 0.6);
+          fotoCapturada = imagenComprimida;
+
+          console.log("✅ Foto capturada", {
+            dimensiones: `${canvas.width}x${canvas.height}`,
+            tamañoBase64: `${(fotoCapturada.length / 1024).toFixed(2)} KB`,
+          });
+
+          setTimeout(() => {
+            captureBtn.classList.remove("capturing");
+
+            // Detener stream de cámara
+            if (stream) {
+              stream.getTracks().forEach((track) => track.stop());
+            }
+
+            // Mostrar preview de la foto
+            document.getElementById("cameraView").classList.add("hidden");
+            document.getElementById("photoPreview").classList.remove("hidden");
+            document.getElementById("capturedPhoto").src = fotoCapturada;
+
+            // Actualizar estado
+            document.getElementById("photoStatus").innerHTML = `
+              <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+                <span class="text-gray-800 font-medium">Foto capturada correctamente</span>
+              </div>
+            `;
+
+            // Habilitar botones
+            document
+              .getElementById("btnRetomarFoto")
+              .classList.remove("hidden");
+            document.getElementById("btnFinalizar").disabled = false;
+            document
+              .getElementById("btnFinalizar")
+              .classList.remove(
+                "disabled:bg-gray-300",
+                "disabled:cursor-not-allowed"
+              );
+
+            showNotification("Foto capturada exitosamente", "success");
+          }, 300);
+        } catch (error) {
+          console.error("❌ Error al tomar foto:", error);
+          showNotification("Error al capturar foto: " + error.message, "error");
         }
       }
 
-      function cambiarCamara() {
-        showNotificationSafe("Cambiando cámara...", "info");
-        // Simular cambio de cámara (frontal/trasera)
-        setTimeout(() => {
-          showNotificationSafe("Cámara trasera activada", "success");
-        }, 500);
+      async function comprimirImagen(canvas, maxWidth = 1024, quality = 0.8) {
+        return new Promise((resolve) => {
+          let width = canvas.width;
+          let height = canvas.height;
+
+          // Redimensionar si es muy grande
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+
+          const resizedCanvas = document.createElement("canvas");
+          resizedCanvas.width = width;
+          resizedCanvas.height = height;
+
+          const ctx = resizedCanvas.getContext("2d");
+          ctx.drawImage(canvas, 0, 0, width, height);
+
+          // Convertir a base64 con compresión JPEG
+          const compressed = resizedCanvas.toDataURL("image/jpeg", quality);
+          resolve(compressed);
+        });
       }
 
-      function tomarFoto() {
-        const captureBtn = document.getElementById("captureBtn");
-        captureBtn.classList.add("capturing");
-
-        // Simular captura de foto
-        setTimeout(() => {
-          captureBtn.classList.remove("capturing");
-
-          // Simular foto capturada (usando una imagen placeholder)
-          const fotoBase64 =
-            "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k=";
-
-          fotoCapturada = fotoBase64;
-
-          // Mostrar preview
-          document.getElementById("cameraView").classList.add("hidden");
-          document.getElementById("photoPreview").classList.remove("hidden");
-          document.getElementById("capturedPhoto").src = fotoBase64;
-
-          // Actualizar estado
-          document.getElementById("photoStatus").innerHTML = `
-            <div class="flex items-center space-x-3">
-              <div class="w-3 h-3 bg-green-400 rounded-full"></div>
-              <span class="text-gray-800 font-medium">Foto capturada correctamente</span>
-            </div>
-          `;
-
-          // Habilitar botones
-          document.getElementById("btnRetomarFoto").classList.remove("hidden");
-          document.getElementById("btnFinalizar").disabled = false;
-          document
-            .getElementById("btnFinalizar")
-            .classList.remove(
-              "disabled:bg-gray-300",
-              "disabled:cursor-not-allowed"
-            );
-
-          showNotificationSafe("Foto capturada exitosamente", "success");
-        }, 300);
+      function extraerBase64Puro(dataUrl) {
+        // Eliminar el prefijo "data:image/jpeg;base64," si existe
+        if (dataUrl.startsWith("data:")) {
+          return dataUrl.split(",")[1];
+        }
+        return dataUrl;
       }
 
       function retomarFoto() {
@@ -473,9 +557,17 @@
         document
           .getElementById("btnFinalizar")
           .classList.add("disabled:bg-gray-300", "disabled:cursor-not-allowed");
+
+        // Reiniciar cámara
+        iniciarCamaraReal();
       }
 
       function volverAtras() {
+        // Detener stream si está activo
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+
         if (fotoCapturada) {
           if (confirm("¿Estás seguro? Se perderá la foto capturada.")) {
             window.location.href = "./productos-visita.html";
@@ -487,7 +579,10 @@
 
       function finalizarVisita() {
         if (!fotoCapturada) {
-          alert("Debes tomar una foto del estante antes de continuar");
+          showNotification(
+            "Debes tomar una foto del estante antes de continuar",
+            "error"
+          );
           return;
         }
 
@@ -498,34 +593,144 @@
         document.getElementById("modalConfirmacion").classList.add("hidden");
       }
 
-      function confirmarFinalizacion() {
-        // Preparar datos completos de la visita
-        const datosCompletos = {
-          ...datosVisita,
-          fotoEstante: fotoCapturada,
-          qrCode: simularEscaneoQR(tiendaActual.id),
-          observaciones: "Visita completada desde la aplicación móvil",
-        };
+      async function confirmarFinalizacion() {
+        if (!fotoCapturada) {
+          showNotification("Debes tomar una foto primero", "error");
+          return;
+        }
 
-        // Completar visita
-        const pedidoCompleto = completarVisitaTienda(datosCompletos);
+        try {
+          showLoader();
 
-        if (pedidoCompleto) {
+          // Obtener el ID correcto del empleado
+          const courierId =
+            datosVisita.empleadoId ||
+            empleadoActual?.userId ||
+            empleadoActual?.id;
+
+          if (!courierId) {
+            hideLoader();
+            console.error("❌ No se pudo obtener el ID del empleado:", {
+              empleadoActual,
+              datosVisita,
+            });
+            showNotification(
+              "Error: No se pudo identificar al empleado",
+              "error"
+            );
+            return;
+          }
+
+          // Preparar items (puede estar vacío si no hay productos)
+          const items = (datosVisita.productos || []).map((producto) => ({
+            productId: producto.id,
+            quantity: producto.cantidad,
+          }));
+
+          // Intentar con base64 puro (sin prefijo data:image)
+          const base64Puro = extraerBase64Puro(fotoCapturada);
+
+          // Preparar datos del pedido
+          const orderData = {
+            courierId: parseInt(courierId),
+            storeId: parseInt(datosVisita.tiendaId),
+            photoUrl: base64Puro, // Solo base64 sin prefijo
+            items: items,
+          };
+
+          console.log("📦 Enviando pedido:", {
+            courierId: orderData.courierId,
+            storeId: orderData.storeId,
+            cantidadProductos: orderData.items.length,
+            tamañoFoto: `${(base64Puro.length / 1024).toFixed(2)} KB`,
+            tamañoOriginal: `${(fotoCapturada.length / 1024).toFixed(2)} KB`,
+            tieneItems: orderData.items.length > 0,
+            formatoFoto: fotoCapturada.startsWith("data:")
+              ? "Con prefijo data:"
+              : "Base64 puro",
+          });
+
+          // Log completo para debugging
+          console.log("📋 Estructura completa del pedido:", {
+            courierId: orderData.courierId,
+            storeId: orderData.storeId,
+            photoUrl:
+              orderData.photoUrl.substring(0, 50) + "... (base64 truncado)",
+            items: orderData.items,
+          });
+
+          console.log(
+            "🔍 Items detallados:",
+            JSON.stringify(orderData.items, null, 2)
+          );
+          console.log("🔍 Datos de visita originales:", datosVisita);
+          console.log(
+            "🖼️ Preview de imagen (primeros 100 chars):",
+            orderData.photoUrl.substring(0, 100)
+          );
+
+          // Enviar a la API
+          const response = await apiFetch(API_CONFIG.ENDPOINTS.ORDERS, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(orderData),
+          });
+
+          hideLoader();
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error("❌ Error del servidor:", errorData);
+
+            // Si hay trace en el error, mostrarlo
+            if (errorData.trace) {
+              console.error("🔥 Stack trace del servidor:", errorData.trace);
+            }
+
+            // Mostrar error detallado
+            const errorMsg =
+              errorData.message ||
+              errorData.error ||
+              "Error desconocido del servidor";
+            throw new Error(
+              errorMsg +
+                "\n\n⚠️ REVISA LOS LOGS DEL SERVIDOR SPRING BOOT para ver el error real."
+            );
+          }
+
+          const result = await response.json();
+          console.log("✅ Pedido creado:", result);
+
+          // Cerrar modal
+          document.getElementById("modalConfirmacion").classList.add("hidden");
+
           // Limpiar datos de sesión
           sessionStorage.removeItem("tiendaEnVisita");
           sessionStorage.removeItem("datosVisitaActual");
           sessionStorage.removeItem("tiendaAVisitar");
 
-          showNotificationSafe("Visita completada exitosamente", "success");
+          showNotification("¡Visita completada exitosamente!", "success");
 
-          // Redirigir al dashboard con un delay
+          // Redirigir al dashboard
           setTimeout(() => {
             window.location.href = "./dashboard.html";
-          }, 1500);
-        } else {
-          alert("Error al completar la visita");
+          }, 2000);
+        } catch (error) {
+          hideLoader();
+          console.error("❌ Error al enviar pedido:", error);
+          showNotification("Error al enviar pedido: " + error.message, "error");
+          document.getElementById("modalConfirmacion").classList.add("hidden");
         }
       }
+
+      // Limpiar stream al salir de la página
+      window.addEventListener("beforeunload", () => {
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+      });
 
       // Inicializar cuando la página carga
       document.addEventListener("DOMContentLoaded", initCamara);
