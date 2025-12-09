@@ -27,7 +27,12 @@ class StoreAPI {
         nombre: store.name,
         direccion: store.address,
         frecuenciaVisita: store.visitFrequency,
-        empleadoAsignado: store.assignedCourierId,
+        empleadoAsignado: store.assignedCourier
+          ? store.assignedCourier.id
+          : null,
+        empleadoNombre: store.assignedCourier
+          ? store.assignedCourier.name
+          : null,
         activa: store.active,
       }));
     } catch (error) {
@@ -59,7 +64,12 @@ class StoreAPI {
         nombre: store.name,
         direccion: store.address,
         frecuenciaVisita: store.visitFrequency,
-        empleadoAsignado: store.assignedCourierId,
+        empleadoAsignado: store.assignedCourier
+          ? store.assignedCourier.id
+          : null,
+        empleadoNombre: store.assignedCourier
+          ? store.assignedCourier.name
+          : null,
         activa: store.active,
       };
     } catch (error) {
