@@ -218,6 +218,8 @@
     <script src="../../assets/js/offline-manager.js"></script>
     <script src="../../assets/js/auth.js"></script>
     <script src="../../assets/js/app.js"></script>
+    <!-- Firebase Messaging (debe ser type="module") -->
+    <script type="module" src="../../assets/js/firebase-messaging.js"></script>
 
     <script>
       // Proteger página solo para empleados
@@ -236,6 +238,44 @@
         // Actualizar nombre del empleado
         document.getElementById("employeeName").textContent =
           empleadoActual.nombre || empleadoActual.email.split("@")[0];
+
+        // SOLICITAR PERMISOS DE NOTIFICACIONES (REQUERIDO)
+        console.log("🔔 Iniciando solicitud de permisos de notificaciones...");
+
+        // Esperar a que initEmployeeNotifications esté disponible
+        const maxAttempts = 10;
+        let attempt = 0;
+
+        while (
+          typeof initEmployeeNotifications === "undefined" &&
+          attempt < maxAttempts
+        ) {
+          console.log(
+            `⏳ Esperando a que Firebase se inicialice... (${
+              attempt + 1
+            }/${maxAttempts})`
+          );
+          await new Promise((resolve) => setTimeout(resolve, 500));
+          attempt++;
+        }
+
+        if (typeof initEmployeeNotifications === "function") {
+          const token = await initEmployeeNotifications();
+
+          if (!token) {
+            console.error("❌ No se obtuvieron permisos de notificaciones");
+            // La función initEmployeeNotifications ya redirige al login
+            return;
+          }
+
+          console.log("✅ Permisos de notificaciones concedidos");
+        } else {
+          console.error("❌ Firebase Messaging no está disponible");
+          showNotification(
+            "Error al cargar el sistema de notificaciones",
+            "error"
+          );
+        }
 
         // Precargar todos los datos necesarios
         await precargarDatosOffline();
