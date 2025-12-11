@@ -9,8 +9,11 @@ class OfflineManager {
     this.dbName = "PWA_Sistema_DB";
     this.dbVersion = 2;
     this.db = null;
-    this.isOnline = navigator.onLine;
+    this.isOnline = true; // Asumimos online inicialmente
     this.syncInProgress = false;
+    this.heartbeatInterval = null;
+    this.heartbeatFrequency = 5000; // Verificar cada 5 segundos
+    this.connectionTimeout = 5000; // Timeout de 5 segundos para peticiones
 
     this.init();
   }
@@ -22,15 +25,41 @@ class OfflineManager {
     // Inicializar IndexedDB
     await this.initDB();
 
-    // Configurar listeners de conectividad
+    // Cargar estado offline desde sessionStorage
+    const storedOfflineState = sessionStorage.getItem("appIsOffline");
+    if (storedOfflineState === "true") {
+      this.isOnline = false;
+    }
+
+    // Aplicar UI según el estado almacenado
+    this.applyOfflineUI();
+
+    // Configurar listeners de conectividad del navegador (como indicador rápido)
     this.setupConnectivityListeners();
 
-    // Mostrar estado inicial
-    this.updateOnlineStatus();
+    // Realizar verificación inicial de conexión real
+    await this.verifyConnection();
 
-    // Intentar sincronizar si hay conexión
-    if (this.isOnline) {
-      await this.syncPendingOrders();
+    // Iniciar heartbeat para verificación periódica
+    this.startHeartbeat();
+
+    // Verificar cuando la página gana foco
+    window.addEventListener("focus", async () => {
+      await this.verifyConnection();
+    });
+
+    // Verificar cuando la página se vuelve visible
+    document.addEventListener("visibilitychange", async () => {
+      if (!document.hidden) {
+        await this.verifyConnection();
+      }
+    });
+
+    // Aplicar UI al cargar el DOM
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => {
+        this.applyOfflineUI();
+      });
     }
   }
 
@@ -110,51 +139,177 @@ class OfflineManager {
   }
 
   /**
-   * Configura listeners de conectividad
+   * Configura listeners de conectividad del navegador
    */
   setupConnectivityListeners() {
+    // Estos eventos son solo indicadores rápidos, no definitivos
     window.addEventListener("online", async () => {
-      console.log("🌐 Conexión restaurada");
-      this.isOnline = true;
-      this.updateOnlineStatus();
-
-      // Intentar sincronizar automáticamente
-      await this.syncPendingOrders();
+      console.log("🌐 Navegador detectó conexión - verificando...");
+      await this.verifyConnection();
     });
 
-    window.addEventListener("offline", () => {
-      console.log("📴 Conexión perdida");
-      this.isOnline = false;
-      this.updateOnlineStatus();
+    window.addEventListener("offline", async () => {
+      console.log("📴 Navegador detectó desconexión");
+      this.setOfflineState(true);
     });
   }
 
   /**
-   * Actualiza el indicador visual de estado online/offline
+   * Inicia el heartbeat para verificar conexión periódicamente
    */
-  updateOnlineStatus() {
-    // Remover indicador anterior si existe
-    const existingIndicator = document.getElementById("offlineIndicator");
-    if (existingIndicator) {
-      existingIndicator.remove();
+  startHeartbeat() {
+    // Limpiar heartbeat anterior si existe
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
     }
 
-    if (!this.isOnline) {
-      // Crear indicador offline
-      const indicator = document.createElement("div");
-      indicator.id = "offlineIndicator";
-      indicator.className =
-        "fixed top-0 left-0 right-0 z-50 bg-yellow-500 text-white px-4 py-2 text-center font-medium shadow-lg";
-      indicator.innerHTML = `
-        <i class="fas fa-wifi-slash mr-2"></i>
-        Modo Offline - Los cambios se sincronizarán cuando vuelva la conexión
-      `;
-      document.body.appendChild(indicator);
+    // Verificar conexión periódicamente
+    this.heartbeatInterval = setInterval(async () => {
+      await this.verifyConnection();
+    }, this.heartbeatFrequency);
 
-      showNotification("Modo Offline activado", "warning");
+    console.log(`💓 Heartbeat iniciado (cada ${this.heartbeatFrequency}ms)`);
+  }
+
+  /**
+   * Verifica la conexión real haciendo una petición al servidor
+   */
+  async verifyConnection() {
+    // Si no hay navigator.onLine, definitivamente estamos offline
+    if (!navigator.onLine) {
+      this.setOfflineState(true);
+      return false;
+    }
+
+    try {
+      // Intentar hacer una petición HEAD pequeña al servidor
+      const controller = new AbortController();
+      const timeoutId = setTimeout(
+        () => controller.abort(),
+        this.connectionTimeout
+      );
+
+      // Usar una petición simple a la raíz de la API o un endpoint de health check
+      const response = await fetch(
+        API_CONFIG.BASE_URL || "https://apiwebpwa.website",
+        {
+          method: "HEAD",
+          mode: "no-cors", // Para evitar problemas de CORS en el HEAD
+          cache: "no-store",
+          signal: controller.signal,
+        }
+      );
+
+      clearTimeout(timeoutId);
+
+      // Si llegamos aquí, hay conexión
+      this.setOfflineState(false);
+      return true;
+    } catch (error) {
+      // Error de red = sin conexión real
+      console.log("⚠️ Verificación de conexión falló:", error.message);
+      this.setOfflineState(true);
+      return false;
+    }
+  }
+
+  /**
+   * Establece el estado offline y actualiza UI
+   */
+  setOfflineState(isOffline) {
+    const wasOffline = !this.isOnline;
+    this.isOnline = !isOffline;
+
+    // Guardar estado en sessionStorage
+    if (isOffline) {
+      sessionStorage.setItem("appIsOffline", "true");
     } else {
-      showNotification("Conexión restaurada", "success");
+      sessionStorage.removeItem("appIsOffline");
     }
+
+    // Actualizar UI
+    this.applyOfflineUI();
+
+    // Si cambiamos de offline a online, intentar sincronizar
+    if (wasOffline && !isOffline) {
+      console.log("🔄 Conexión restaurada - iniciando sincronización...");
+      this.syncPendingOrders();
+    }
+
+    // Log del cambio de estado
+    if (wasOffline !== isOffline) {
+      console.log(
+        isOffline ? "📴 Modo OFFLINE activado" : "🌐 Modo ONLINE activado"
+      );
+    }
+  }
+
+  /**
+   * Aplica la UI de offline si corresponde
+   */
+  applyOfflineUI() {
+    const isOffline = !this.isOnline;
+
+    if (isOffline) {
+      // Crear o mostrar banner offline
+      let indicator = document.getElementById("offlineIndicator");
+
+      if (!indicator) {
+        indicator = document.createElement("div");
+        indicator.id = "offlineIndicator";
+        indicator.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 9999;
+          background-color: #f59e0b;
+          color: white;
+          padding: 10px 12px;
+          text-align: center;
+          font-size: 13px;
+          font-weight: 500;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        `;
+        indicator.innerHTML = `
+          <i class="fas fa-wifi-slash"></i>
+          <span>Modo Offline</span>
+          <span style="font-size: 11px; opacity: 0.9;">• Sin conexión a Internet</span>
+        `;
+        document.body.prepend(indicator);
+      }
+
+      // Ajustar navbar si existe
+      const navbar = document.querySelector(".mobile-header");
+      if (navbar) {
+        navbar.style.top = "34px";
+        navbar.style.transition = "top 0.3s ease";
+      }
+    } else {
+      // Remover banner offline
+      const indicator = document.getElementById("offlineIndicator");
+      if (indicator) {
+        indicator.remove();
+      }
+
+      // Restaurar navbar
+      const navbar = document.querySelector(".mobile-header");
+      if (navbar) {
+        navbar.style.top = "0";
+      }
+    }
+  }
+
+  /**
+   * Verifica si hay conexión a internet
+   * @returns {boolean} true si hay conexión, false si está offline
+   */
+  checkOnlineStatus() {
+    return navigator.onLine;
   }
 
   /**
