@@ -544,13 +544,28 @@
             return;
           }
 
+          // ORDENAR TIENDAS: Sin visitar primero, luego las visitadas
+          const tiendasOrdenadas = tiendas.sort((a, b) => {
+            // Si a no tiene visita y b sí, a va primero (return -1)
+            if (!a.lastVisitDate && b.lastVisitDate) return -1;
+            // Si a tiene visita y b no, b va primero (return 1)
+            if (a.lastVisitDate && !b.lastVisitDate) return 1;
+            // Si ambas tienen o no tienen visita, mantener orden por ID
+            return a.id - b.id;
+          });
+
+          console.log("📊 Tiendas ordenadas:", tiendasOrdenadas);
+
+          // Actualizar contador para sistema de actualización automática
+          lastStoresCount = tiendasOrdenadas.length;
+
           // Actualizar estadísticas
           document.getElementById("tiendasPendientes").textContent =
-            tiendas.filter((t) => t.active).length;
+            tiendasOrdenadas.filter((t) => t.active).length;
           document.getElementById("tiendasCompletadas").textContent =
-            tiendas.filter((t) => t.lastVisitDate).length;
+            tiendasOrdenadas.filter((t) => t.lastVisitDate).length;
 
-          container.innerHTML = tiendas
+          container.innerHTML = tiendasOrdenadas
             .map((tienda) => {
               const isCompleted = tienda.lastVisitDate !== null;
               const cardClass = isCompleted
@@ -636,8 +651,115 @@
         document.getElementById("modalCompletarRuta").classList.add("hidden");
       }
 
+      // ===== ACTUALIZACIÓN AUTOMÁTICA DE TIENDAS =====
+      let updateInterval = null;
+      let lastStoresCount = 0;
+
+      /**
+       * Inicia el polling para verificar nuevas tiendas
+       */
+      function iniciarActualizacionAutomatica() {
+        // Verificar cada 30 segundos si hay nuevas tiendas
+        const INTERVALO_ACTUALIZACION = 30000; // 30 segundos
+
+        console.log("🔄 Iniciando actualización automática de tiendas...");
+
+        updateInterval = setInterval(async () => {
+          // Solo verificar si hay conexión
+          const isOnline =
+            typeof offlineManager !== "undefined" && offlineManager
+              ? offlineManager.checkOnlineStatus()
+              : navigator.onLine;
+
+          if (!isOnline) {
+            console.log("📴 Sin conexión - omitiendo verificación de tiendas");
+            return;
+          }
+
+          try {
+            console.log("🔍 Verificando actualizaciones de tiendas...");
+
+            const response = await apiFetch(
+              API_CONFIG.ENDPOINTS.STORES_COURIER,
+              {
+                method: "GET",
+              }
+            );
+
+            if (response.ok) {
+              const result = await response.json();
+              const tiendas = result.data || result;
+
+              // Verificar si hay cambios en la cantidad de tiendas
+              if (tiendas.length !== lastStoresCount) {
+                console.log(
+                  `📢 Cambio detectado: ${lastStoresCount} → ${tiendas.length} tiendas`
+                );
+
+                // Actualizar contador
+                lastStoresCount = tiendas.length;
+
+                // Mostrar notificación si hay más tiendas
+                if (tiendas.length > lastStoresCount - tiendas.length) {
+                  showNotification(
+                    `Se ${
+                      tiendas.length - (lastStoresCount - tiendas.length) === 1
+                        ? "ha agregado una nueva tienda"
+                        : "han agregado nuevas tiendas"
+                    }`,
+                    "info"
+                  );
+                }
+
+                // Recargar tiendas automáticamente
+                await cargarTiendasAsignadas();
+                console.log("✅ Tiendas actualizadas automáticamente");
+              } else {
+                console.log("✓ No hay cambios en las tiendas");
+              }
+            }
+          } catch (error) {
+            console.error("❌ Error al verificar actualizaciones:", error);
+          }
+        }, INTERVALO_ACTUALIZACION);
+
+        console.log(
+          `✅ Actualización automática configurada (cada ${
+            INTERVALO_ACTUALIZACION / 1000
+          }s)`
+        );
+      }
+
+      /**
+       * Detiene el polling de actualización
+       */
+      function detenerActualizacionAutomatica() {
+        if (updateInterval) {
+          clearInterval(updateInterval);
+          updateInterval = null;
+          console.log("⏹️ Actualización automática detenida");
+        }
+      }
+
+      // Detener actualización cuando la página se oculta (ahorro de recursos)
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          detenerActualizacionAutomatica();
+        } else {
+          // Reanudar cuando vuelve a ser visible
+          iniciarActualizacionAutomatica();
+          // Verificar inmediatamente
+          cargarTiendasAsignadas();
+        }
+      });
+
       // Inicializar cuando la página carga
-      document.addEventListener("DOMContentLoaded", initDashboard);
+      document.addEventListener("DOMContentLoaded", async () => {
+        await initDashboard();
+
+        // Iniciar actualización automática después de cargar el dashboard
+        iniciarActualizacionAutomatica();
+      });
     </script>
   </body>
 </html>
