@@ -149,9 +149,12 @@ async function handleLogin(event) {
               console.log("📦 Datos de tiendas recibidos:", storesData);
 
               if (storesData.data && Array.isArray(storesData.data)) {
-                // Guardar tiendas
-                await offlineManager.cacheStores(storesData.data);
-                console.log("✅ Tiendas precargadas:", storesData.data.length);
+                // REEMPLAZAR tiendas completamente (eliminar obsoletas y agregar actuales)
+                await offlineManager.replaceStores(storesData.data);
+                console.log(
+                  "✅ Tiendas actualizadas completamente:",
+                  storesData.data.length
+                );
 
                 // Extraer y guardar datos del empleado desde la primera tienda (assignedCourier)
                 if (
@@ -167,9 +170,10 @@ async function handleLogin(event) {
                   };
 
                   console.log("👤 Datos del empleado extraídos:", employeeData);
-                  await offlineManager.cacheEmployee(employeeData);
+                  // REEMPLAZAR datos del empleado completamente
+                  await offlineManager.replaceEmployee(employeeData);
                   console.log(
-                    "✅ Datos del empleado precargados:",
+                    "✅ Datos del empleado actualizados completamente:",
                     employeeData.name
                   );
 
@@ -233,10 +237,19 @@ async function handleLogin(event) {
               );
 
               if (activeProducts.length > 0) {
-                await offlineManager.cacheProducts(activeProducts);
-                console.log("✅ Productos precargados:", activeProducts.length);
+                // REEMPLAZAR productos completamente (eliminar obsoletos y agregar actuales)
+                await offlineManager.replaceProducts(activeProducts);
+                console.log(
+                  "✅ Productos actualizados completamente:",
+                  activeProducts.length
+                );
               } else {
                 console.warn("⚠️ No se encontraron productos activos");
+                // Si no hay productos activos, limpiar IndexedDB para no mostrar productos obsoletos
+                await offlineManager.clearProducts();
+                console.log(
+                  "🧹 IndexedDB de productos limpiado (no hay productos activos)"
+                );
               }
             } else {
               console.error(

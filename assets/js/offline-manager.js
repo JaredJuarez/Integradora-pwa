@@ -313,6 +313,26 @@ class OfflineManager {
   }
 
   /**
+   * Limpia completamente las tiendas de IndexedDB
+   */
+  async clearStores() {
+    if (!this.db) await this.initDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(["stores"], "readwrite");
+      const store = transaction.objectStore("stores");
+      const request = store.clear();
+
+      request.onsuccess = () => {
+        console.log("🧹 Tiendas eliminadas de IndexedDB");
+        resolve();
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
    * Guarda tiendas en caché local (CP-06.1)
    */
   async cacheStores(stores) {
@@ -333,6 +353,24 @@ class OfflineManager {
   }
 
   /**
+   * Reemplaza completamente las tiendas en IndexedDB con datos frescos
+   */
+  async replaceStores(stores) {
+    if (!this.db) await this.initDB();
+
+    // Primero limpiar todas las tiendas
+    await this.clearStores();
+
+    // Luego agregar las nuevas
+    if (stores && stores.length > 0) {
+      await this.cacheStores(stores);
+      console.log(`🔄 ${stores.length} tiendas actualizadas en IndexedDB`);
+    } else {
+      console.log("⚠️ No hay tiendas para actualizar");
+    }
+  }
+
+  /**
    * Obtiene tiendas desde caché local (CP-06.1)
    */
   async getCachedStores() {
@@ -346,6 +384,26 @@ class OfflineManager {
       request.onsuccess = () => {
         console.log(`📦 ${request.result.length} tiendas cargadas desde caché`);
         resolve(request.result);
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Limpia completamente los productos de IndexedDB
+   */
+  async clearProducts() {
+    if (!this.db) await this.initDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(["products"], "readwrite");
+      const store = transaction.objectStore("products");
+      const request = store.clear();
+
+      request.onsuccess = () => {
+        console.log("🧹 Productos eliminados de IndexedDB");
+        resolve();
       };
 
       request.onerror = () => reject(request.error);
@@ -400,6 +458,24 @@ class OfflineManager {
   }
 
   /**
+   * Reemplaza completamente los productos en IndexedDB con datos frescos
+   */
+  async replaceProducts(products) {
+    if (!this.db) await this.initDB();
+
+    // Primero limpiar todos los productos
+    await this.clearProducts();
+
+    // Luego agregar los nuevos
+    if (products && products.length > 0) {
+      await this.cacheProducts(products);
+      console.log(`🔄 ${products.length} productos actualizados en IndexedDB`);
+    } else {
+      console.log("⚠️ No hay productos para actualizar");
+    }
+  }
+
+  /**
    * Obtiene productos desde caché local
    */
   async getCachedProducts() {
@@ -439,6 +515,26 @@ class OfflineManager {
   }
 
   /**
+   * Limpia completamente los datos del empleado de IndexedDB
+   */
+  async clearEmployee() {
+    if (!this.db) await this.initDB();
+
+    return new Promise((resolve, reject) => {
+      const transaction = this.db.transaction(["employee"], "readwrite");
+      const store = transaction.objectStore("employee");
+      const request = store.clear();
+
+      request.onsuccess = () => {
+        console.log("🧹 Datos de empleado eliminados de IndexedDB");
+        resolve();
+      };
+
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
    * Guarda datos del empleado en caché local
    */
   async cacheEmployee(employeeData) {
@@ -465,6 +561,27 @@ class OfflineManager {
 
       request.onerror = () => reject(request.error);
     });
+  }
+
+  /**
+   * Reemplaza completamente los datos del empleado en IndexedDB con datos frescos
+   */
+  async replaceEmployee(employeeData) {
+    if (!this.db) await this.initDB();
+
+    // Primero limpiar datos del empleado
+    await this.clearEmployee();
+
+    // Luego agregar los nuevos datos
+    if (employeeData) {
+      await this.cacheEmployee(employeeData);
+      console.log(
+        `🔄 Datos de empleado actualizados en IndexedDB:`,
+        employeeData.name || employeeData.email
+      );
+    } else {
+      console.log("⚠️ No hay datos de empleado para actualizar");
+    }
   }
 
   /**
