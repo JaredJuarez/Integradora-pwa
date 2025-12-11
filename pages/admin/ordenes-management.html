@@ -18,6 +18,22 @@
     <!-- Google Maps API -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTJa-KaC0GQ055bZp9zc5kwa6acP-PDww"></script>
 
+    <!-- Service Worker -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("../../sw.js")
+            .then((reg) =>
+              console.log("✅ Service Worker registrado:", reg.scope)
+            )
+            .catch((err) =>
+              console.error("❌ Error al registrar Service Worker:", err)
+            );
+        });
+      }
+    </script>
+
     <style>
       #mapContainer {
         width: 100%;

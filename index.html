@@ -27,6 +27,22 @@
 
     <!-- Apple Touch Icon -->
     <link rel="apple-touch-icon" href="assets/images/icons/icon-192x192.png" />
+
+    <!-- Service Worker -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .then((reg) =>
+              console.log("✅ Service Worker registrado:", reg.scope)
+            )
+            .catch((err) =>
+              console.error("❌ Error al registrar Service Worker:", err)
+            );
+        });
+      }
+    </script>
   </head>
   <body class="bg-gray-100">
     <!-- Loader -->
