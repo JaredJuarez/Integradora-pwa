@@ -230,7 +230,7 @@ async function updateUserFCMToken(token) {
     console.log("📤 Datos a enviar al PUT:", updateData);
 
     // Hacer la petición PUT al endpoint
-    const response = await apiFetch(API_CONFIG.ENDPOINTS.USERS, {
+    const response = await apiFetch(API_CONFIG.ENDPOINTS.USER, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",

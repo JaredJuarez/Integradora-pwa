@@ -8,7 +8,7 @@ const API_CONFIG = {
     REGISTER: "/api/auth/register",
 
     // User/Employee endpoints
-    USER: "/api/user",
+    USER: "/api/user/",
     USERS: "/api/user",
     USER_BY_ID: (id) => `/api/user/${id}`,
     EMPLOYEES: "/api/user/employees",
