@@ -173,6 +173,89 @@ async function getFirebaseToken() {
 }
 
 /**
+ * Actualiza el token FCM del usuario en el servidor
+ * @param {string} token - Token FCM a guardar
+ * @returns {Promise<boolean>} true si se actualizó correctamente
+ */
+async function updateUserFCMToken(token) {
+  try {
+    console.log("💾 Actualizando token FCM en el servidor...");
+
+    // Obtener datos del usuario actual desde la sesión
+    const session = Storage.get("session");
+    if (!session || !session.user || !session.token) {
+      console.error("❌ No hay sesión activa");
+      return false;
+    }
+
+    const currentUser = session.user;
+    console.log("👤 Usuario actual:", currentUser);
+
+    // Primero obtener los datos completos del usuario desde el servidor
+    console.log("📥 Obteniendo datos completos del usuario...");
+    const getUserResponse = await apiFetch(
+      API_CONFIG.ENDPOINTS.USER_BY_ID(currentUser.id),
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${session.token}`,
+        },
+      }
+    );
+
+    if (!getUserResponse.ok) {
+      console.error("❌ Error al obtener datos del usuario");
+      return false;
+    }
+
+    const userDataResponse = await getUserResponse.json();
+    const userData = userDataResponse.data || userDataResponse;
+    console.log("📦 Datos completos del usuario:", userData);
+
+    // Construir el objeto de actualización con TODOS los campos del usuario
+    const updateData = {
+      id: userData.id,
+      name: userData.name,
+      phone: userData.phone || "",
+      email: userData.email,
+      password: userData.password, // Enviar la contraseña que viene del servidor
+      status: userData.status !== undefined ? userData.status : true,
+      roleId:
+        userData.roleId ||
+        userData.role?.id ||
+        (currentUser.rol === "empleado" ? 2 : 1),
+      tokenFcm: token,
+    };
+
+    console.log("📤 Datos a enviar al PUT:", updateData);
+
+    // Hacer la petición PUT al endpoint
+    const response = await apiFetch(API_CONFIG.ENDPOINTS.USER, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.token}`,
+      },
+      body: JSON.stringify(updateData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("❌ Error al actualizar token:", errorData);
+      return false;
+    }
+
+    const result = await response.json();
+    console.log("✅ Token FCM actualizado en el servidor:", result);
+
+    return true;
+  } catch (error) {
+    console.error("❌ Error al actualizar token FCM:", error);
+    return false;
+  }
+}
+
+/**
  * Inicializa las notificaciones para el empleado
  * Solicita permisos automáticamente y redirige si se niega
  */
@@ -220,6 +303,14 @@ async function initEmployeeNotifications() {
       console.log("💾 Token guardado en localStorage");
     }
 
+    // Actualizar el token FCM en el servidor
+    const updated = await updateUserFCMToken(token);
+    if (updated) {
+      console.log("✅ Token FCM actualizado exitosamente en el servidor");
+    } else {
+      console.warn("⚠️ No se pudo actualizar el token en el servidor");
+    }
+
     return token;
   } catch (error) {
     console.error("❌ Error al inicializar notificaciones:", error);
@@ -237,4 +328,5 @@ async function initEmployeeNotifications() {
 window.initFirebaseMessaging = initFirebaseMessaging;
 window.requestNotificationPermission = requestNotificationPermission;
 window.getFirebaseToken = getFirebaseToken;
+window.updateUserFCMToken = updateUserFCMToken;
 window.initEmployeeNotifications = initEmployeeNotifications;
