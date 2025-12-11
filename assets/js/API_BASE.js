@@ -1,7 +1,7 @@
 // API_BASE.js - Configuración de endpoints de la API
 
 const API_CONFIG = {
-  BASE_URL: "http://192.168.1.167:8080",
+  BASE_URL: "http://https://bbr27n9t-8081.usw3.devtunnels.ms",
   ENDPOINTS: {
     // Auth endpoints
     LOGIN: "/api/auth",
