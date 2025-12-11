@@ -218,7 +218,6 @@ async function updateUserFCMToken(token) {
       name: userData.name,
       phone: userData.phone || "",
       email: userData.email,
-      password: userData.password, // Enviar la contraseña que viene del servidor
       status: userData.status !== undefined ? userData.status : true,
       roleId:
         userData.roleId ||
