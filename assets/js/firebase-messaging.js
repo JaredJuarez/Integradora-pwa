@@ -11,17 +11,17 @@ import {
 
 // Configuración de Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyAsKtVn__KbM1BhBRtNEgz5qRkyGKfcKcI",
-  authDomain: "pwa-i20223tn132.firebaseapp.com",
-  projectId: "pwa-i20223tn132",
-  storageBucket: "pwa-i20223tn132.firebasestorage.app",
-  messagingSenderId: "740907690280",
-  appId: "1:740907690280:web:bb5f46f2343d3165eec81d",
+  apiKey: "AIzaSyCu9YK8o0AXFG-6JuxgbUmuUOXO2KKDf20",
+  authDomain: "places-36635.firebaseapp.com",
+  projectId: "places-36635",
+  storageBucket: "places-36635.appspot.com",
+  messagingSenderId: "188708115556",
+  appId: "1:188708115556:web:301a59b7f6d00fa3e47b71",
 };
 
 // Clave pública VAPID (obtenida desde Firebase Console → Cloud Messaging)
 const VAPID_KEY =
-  "BLLgOrWmpOx7pxUDchb4grvZWTppH16a6JxBafRrhIdtipsKcPJHp2HImf6fPe_i1-HEb4ezvWB4t1Y0TjwX-UI";
+  "BInY8gzKYT_pedCKRMnW3Z63VXoN9eAnzC7804P6266SftKsdvSnqehHDX1c7tmIRqGNlgSQarI2mraH71JPPJY";
 
 // Inicializar Firebase
 let app;
@@ -223,7 +223,7 @@ async function updateUserFCMToken(token) {
         userData.roleId ||
         userData.role?.id ||
         (currentUser.rol === "empleado" ? 2 : 1),
-    //   tokenFcm: token,
+      tokenFcm: token,
     };
 
     console.log("📤 Datos a enviar al PUT:", updateData);
