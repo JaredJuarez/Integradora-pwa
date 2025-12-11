@@ -34,6 +34,7 @@ class StoreAPI {
           ? store.assignedCourier.name
           : null,
         activa: store.active,
+        lastVisitDate: store.lastVisitDate,
       }));
     } catch (error) {
       console.error("Error al obtener tiendas:", error);
@@ -64,6 +65,7 @@ class StoreAPI {
         nombre: store.name,
         direccion: store.address,
         frecuenciaVisita: store.visitFrequency,
+        lastVisitDate: store.lastVisitDate,
         empleadoAsignado: store.assignedCourier
           ? store.assignedCourier.id
           : null,
