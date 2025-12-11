@@ -265,6 +265,17 @@
             return;
           }
 
+          // LIMPIAR COMPLETAMENTE IndexedDB antes de cargar datos frescos
+          console.log("🧹 Limpiando IndexedDB completamente...");
+          try {
+            await offlineManager.clearStores();
+            await offlineManager.clearProducts();
+            await offlineManager.clearEmployee();
+            console.log("✅ IndexedDB limpiado completamente");
+          } catch (error) {
+            console.error("❌ Error al limpiar IndexedDB:", error);
+          }
+
           // Precargar tiendas y datos del empleado
           try {
             console.log("🏪 Precargando tiendas...");
@@ -282,8 +293,8 @@
               console.log("📦 Datos de tiendas recibidos:", storesData);
 
               if (storesData.data && Array.isArray(storesData.data)) {
-                // REEMPLAZAR tiendas completamente (eliminar obsoletas)
-                await offlineManager.replaceStores(storesData.data);
+                // Guardar tiendas frescas (IndexedDB ya fue limpiado)
+                await offlineManager.cacheStores(storesData.data);
                 console.log(
                   "✅ Tiendas actualizadas completamente:",
                   storesData.data.length
@@ -302,8 +313,8 @@
                     active: true,
                   };
 
-                  // REEMPLAZAR datos del empleado completamente
-                  await offlineManager.replaceEmployee(employeeData);
+                  // Guardar datos del empleado (IndexedDB ya fue limpiado)
+                  await offlineManager.cacheEmployee(employeeData);
                   console.log(
                     "✅ Empleado actualizado completamente:",
                     employeeData.name
@@ -344,19 +355,14 @@
               );
 
               if (activeProducts.length > 0) {
-                // REEMPLAZAR productos completamente (eliminar obsoletos)
-                await offlineManager.replaceProducts(activeProducts);
+                // Guardar productos frescos (IndexedDB ya fue limpiado)
+                await offlineManager.cacheProducts(activeProducts);
                 console.log(
                   "✅ Productos actualizados completamente:",
                   activeProducts.length
                 );
               } else {
                 console.warn("⚠️ No se encontraron productos activos");
-                // Si no hay productos activos, limpiar IndexedDB
-                await offlineManager.clearProducts();
-                console.log(
-                  "🧹 IndexedDB de productos limpiado (no hay productos activos)"
-                );
               }
             }
           } catch (error) {
@@ -456,10 +462,10 @@
                 const result = await response.json();
                 tiendas = result.data || result;
 
-                // REEMPLAZAR tiendas en cache (eliminar obsoletas y guardar actuales)
+                // Guardar en IndexedDB (ya fue limpiado en precargarDatosOffline)
                 if (typeof offlineManager !== "undefined" && offlineManager) {
-                  await offlineManager.replaceStores(tiendas);
-                  console.log("✅ Tiendas actualizadas en IndexedDB");
+                  await offlineManager.cacheStores(tiendas);
+                  console.log("✅ Tiendas guardadas en IndexedDB");
                 }
               }
             } catch (error) {
