@@ -681,6 +681,196 @@
       window.deleteStore = deleteStore;
       window.openStoreModal = openStoreModal;
       window.closeStoreModal = closeStoreModal;
+
+      // ===== FUNCIONES PARA QR CODE =====
+      let currentQRCode = null;
+      let currentStoreForQR = null;
+
+      /**
+       * Genera y muestra el código QR para una tienda
+       */
+      function generateQR(storeId) {
+        const store = allStores.find((s) => s.id === storeId);
+        if (!store) {
+          showNotification("Tienda no encontrada", "error");
+          return;
+        }
+
+        currentStoreForQR = store;
+
+        // Actualizar información de la tienda en el modal
+        document.getElementById("qrStoreName").textContent = store.nombre;
+        document.getElementById("qrStoreId").textContent = store.id;
+
+        // Limpiar QR anterior si existe
+        const qrContainer = document.getElementById("qrCodeContainer");
+        qrContainer.innerHTML = "";
+
+        // Generar nuevo código QR con el ID de la tienda
+        currentQRCode = new QRCode(qrContainer, {
+          text: store.id.toString(),
+          width: 256,
+          height: 256,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H,
+        });
+
+        // Mostrar el modal
+        document.getElementById("qrModal").classList.remove("hidden");
+
+        console.log(
+          "✅ QR generado para tienda:",
+          store.nombre,
+          "ID:",
+          store.id
+        );
+      }
+
+      /**
+       * Cierra el modal del QR
+       */
+      function closeQRModal() {
+        document.getElementById("qrModal").classList.add("hidden");
+        currentQRCode = null;
+        currentStoreForQR = null;
+      }
+
+      /**
+       * Descarga el código QR como imagen PNG
+       */
+      function downloadQR() {
+        if (!currentStoreForQR) {
+          showNotification("No hay QR para descargar", "error");
+          return;
+        }
+
+        try {
+          const qrCanvas = document.querySelector("#qrCodeContainer canvas");
+          if (!qrCanvas) {
+            showNotification("Error al obtener el código QR", "error");
+            return;
+          }
+
+          // Convertir canvas a blob y descargar
+          qrCanvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `QR_Tienda_${
+              currentStoreForQR.id
+            }_${currentStoreForQR.nombre.replace(/\s+/g, "_")}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            showNotification("QR descargado exitosamente", "success");
+          });
+        } catch (error) {
+          console.error("Error al descargar QR:", error);
+          showNotification("Error al descargar el QR", "error");
+        }
+      }
+
+      /**
+       * Imprime el código QR
+       */
+      function printQR() {
+        if (!currentStoreForQR) {
+          showNotification("No hay QR para imprimir", "error");
+          return;
+        }
+
+        try {
+          const qrCanvas = document.querySelector("#qrCodeContainer canvas");
+          if (!qrCanvas) {
+            showNotification("Error al obtener el código QR", "error");
+            return;
+          }
+
+          // Crear una ventana de impresión
+          const printWindow = window.open("", "_blank");
+          const qrImage = qrCanvas.toDataURL("image/png");
+
+          printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <title>QR - ${currentStoreForQR.nombre}</title>
+                <style>
+                  body {
+                    font-family: Arial, sans-serif;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    margin: 0;
+                    padding: 20px;
+                  }
+                  h1 {
+                    font-size: 24px;
+                    margin-bottom: 10px;
+                    color: #333;
+                  }
+                  .store-info {
+                    text-align: center;
+                    margin-bottom: 20px;
+                    color: #666;
+                  }
+                  img {
+                    max-width: 400px;
+                    border: 2px solid #e5e7eb;
+                    padding: 20px;
+                    background: white;
+                  }
+                  .footer {
+                    margin-top: 20px;
+                    font-size: 12px;
+                    color: #999;
+                  }
+                  @media print {
+                    body {
+                      padding: 0;
+                    }
+                  }
+                </style>
+              </head>
+              <body>
+                <h1>${currentStoreForQR.nombre}</h1>
+                <div class="store-info">
+                  <p><strong>ID:</strong> ${currentStoreForQR.id}</p>
+                  <p><strong>Dirección:</strong> ${currentStoreForQR.direccion}</p>
+                </div>
+                <img src="${qrImage}" alt="Código QR">
+                <div class="footer">
+                  <p>Escanea este código para registrar tu visita</p>
+                </div>
+              </body>
+            </html>
+          `);
+
+          printWindow.document.close();
+          printWindow.focus();
+
+          // Esperar a que cargue la imagen antes de imprimir
+          setTimeout(() => {
+            printWindow.print();
+          }, 250);
+
+          showNotification("Preparando impresión...", "info");
+        } catch (error) {
+          console.error("Error al imprimir QR:", error);
+          showNotification("Error al imprimir el QR", "error");
+        }
+      }
+
+      // Exportar funciones globalmente
+      window.generateQR = generateQR;
+      window.closeQRModal = closeQRModal;
+      window.downloadQR = downloadQR;
+      window.printQR = printQR;
     </script>
   </body>
 </html>
