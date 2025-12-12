@@ -16,7 +16,7 @@ const firebaseConfig = {
   projectId: "places-36635",
   storageBucket: "places-36635.appspot.com",
   messagingSenderId: "188708115556",
-  appId: "1:188708115556:web:301a59b7f6d00fa3e47b71",
+  appId: "1:188708115556:web:301a59b7f6d00fa3e47b71"
 };
 
 // Clave pública VAPID (obtenida desde Firebase Console → Cloud Messaging)
