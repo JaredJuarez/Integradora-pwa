@@ -223,7 +223,7 @@ async function updateUserFCMToken(token) {
         userData.roleId ||
         userData.role?.id ||
         (currentUser.rol === "empleado" ? 2 : 1),
-    //   tokenFcm: token,
+      tokenFcm: token,
     };
 
     console.log("📤 Datos a enviar al PUT:", updateData);
