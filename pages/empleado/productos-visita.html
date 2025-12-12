@@ -112,14 +112,21 @@
             >
               <i class="fas fa-question-circle text-xl"></i>
             </button>
-            <div class="text-right">
+            <button
+              onclick="abrirResumen()"
+              class="text-right hover:bg-gray-100 px-3 py-2 rounded-lg transition-all"
+              id="btnContador"
+            >
               <div
                 class="text-sm font-bold text-gray-700"
                 id="contadorProductos"
               >
                 0 productos
               </div>
-            </div>
+              <div class="text-xs text-gray-500">
+                <i class="fas fa-eye"></i> Ver resumen
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -127,23 +134,6 @@
 
     <!-- Contenido Principal -->
     <div class="max-w-md mx-auto px-4 pb-24">
-      <!-- Información de la tienda -->
-      <div class="stats-card rounded-lg p-4 mt-4 mb-6 shadow-lg">
-        <div class="flex items-center space-x-3">
-          <div
-            class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center"
-          >
-            <i class="fas fa-store text-white text-sm"></i>
-          </div>
-          <div>
-            <h2 class="font-bold text-gray-800" id="tiendaNombre">
-              Cargando...
-            </h2>
-            <p class="text-sm text-gray-600">Visita en progreso</p>
-          </div>
-        </div>
-      </div>
-
       <!-- Buscador de productos -->
       <div class="mb-6">
         <div class="stats-card rounded-lg p-3 shadow-lg">
@@ -171,23 +161,63 @@
       <div class="space-y-3 mb-6" id="productosContainer">
         <!-- Los productos se generarán dinámicamente -->
       </div>
+    </div>
 
-      <!-- Resumen de selección -->
-      <div
-        id="resumenSeleccion"
-        class="stats-card rounded-lg p-4 shadow-lg hidden mb-6"
-      >
-        <h3 class="font-bold text-gray-800 mb-3 flex items-center">
-          <i class="fas fa-clipboard-list mr-2 text-gray-700"></i>
-          Productos Seleccionados
-        </h3>
-        <div id="listaSeleccionados" class="space-y-2 mb-4">
-          <!-- Lista dinámica -->
-        </div>
-        <div class="border-t pt-3">
-          <div class="text-sm text-gray-600">
-            Total de productos:
-            <span id="totalProductos" class="font-bold">0</span>
+    <!-- Modal Resumen de Selección -->
+    <div
+      id="modalResumen"
+      class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center"
+      onclick="cerrarResumen()"
+    >
+      <div class="max-w-md w-full mx-4" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-lg shadow-xl max-h-[80vh] overflow-y-auto">
+          <div class="p-4 border-b border-gray-200 sticky top-0 bg-white">
+            <div class="flex items-start justify-between">
+              <h3 class="font-bold text-gray-800 flex items-center text-lg">
+                <i class="fas fa-clipboard-list mr-2 text-gray-700"></i>
+                Productos Seleccionados
+              </h3>
+              <button
+                onclick="cerrarResumen()"
+                class="text-gray-400 hover:text-gray-600"
+              >
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="p-4">
+            <div id="listaSeleccionados" class="space-y-2 mb-4">
+              <!-- Lista dinámica -->
+            </div>
+
+            <div class="border-t pt-4 bg-gray-50 -mx-4 px-4 py-3">
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-gray-600">Total de productos:</span>
+                <span
+                  id="totalProductos"
+                  class="font-bold text-lg text-gray-800"
+                  >0</span
+                >
+              </div>
+            </div>
+
+            <div class="mt-4 flex space-x-3">
+              <button
+                onclick="limpiarSeleccion()"
+                class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium"
+              >
+                <i class="fas fa-trash mr-2"></i>
+                Limpiar Todo
+              </button>
+              <button
+                onclick="cerrarResumen()"
+                class="flex-1 btn-primary py-2 rounded-lg font-medium"
+              >
+                <i class="fas fa-check mr-2"></i>
+                Aceptar
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -640,9 +670,15 @@
         );
         const cantidadItems = Object.keys(productosSeleccionados).length;
 
-        document.getElementById(
-          "contadorProductos"
-        ).textContent = `${cantidadItems} productos`;
+        // Actualizar contador en el header
+        const contadorElement = document.getElementById("contadorProductos");
+        if (cantidadItems > 0) {
+          contadorElement.textContent = `${cantidadItems} producto${
+            cantidadItems > 1 ? "s" : ""
+          }`;
+        } else {
+          contadorElement.textContent = "0 productos";
+        }
 
         // Actualizar texto del botón
         const textoBoton = document.getElementById("textoBoton");
@@ -652,28 +688,28 @@
           textoBoton.textContent = "Continuar sin productos";
         }
 
-        // Mostrar/ocultar resumen
-        const resumen = document.getElementById("resumenSeleccion");
+        // Actualizar lista en el modal de resumen
+        const lista = document.getElementById("listaSeleccionados");
 
         if (cantidadItems > 0) {
-          resumen.classList.remove("hidden");
-
-          // Actualizar resumen con botón de eliminar
-          const lista = document.getElementById("listaSeleccionados");
           lista.innerHTML = Object.values(productosSeleccionados)
             .map(
               (item) => `
-            <div class="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
+            <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg">
               <div class="flex-1">
-                <span class="font-medium">${item.producto.name}</span>
-                <span class="text-gray-600 ml-2">${item.cantidad} unidades</span>
+                <div class="font-medium text-gray-800">${
+                  item.producto.name
+                }</div>
+                <div class="text-sm text-gray-600">${item.cantidad} unidad${
+                item.cantidad > 1 ? "es" : ""
+              }</div>
               </div>
               <button 
                 onclick="eliminarProducto(${item.producto.id})" 
-                class="text-red-500 hover:text-red-700 ml-2 p-1"
+                class="text-red-500 hover:text-red-700 ml-2 p-2 hover:bg-red-50 rounded-lg transition-all"
                 title="Eliminar producto"
               >
-                <i class="fas fa-trash text-sm"></i>
+                <i class="fas fa-trash"></i>
               </button>
             </div>
           `
@@ -683,7 +719,39 @@
           document.getElementById("totalProductos").textContent =
             totalProductos;
         } else {
-          resumen.classList.add("hidden");
+          lista.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+              <i class="fas fa-box-open text-4xl mb-3"></i>
+              <p>No hay productos seleccionados</p>
+            </div>
+          `;
+          document.getElementById("totalProductos").textContent = "0";
+        }
+      }
+
+      function abrirResumen() {
+        document.getElementById("modalResumen").classList.remove("hidden");
+      }
+
+      function cerrarResumen() {
+        document.getElementById("modalResumen").classList.add("hidden");
+      }
+
+      function limpiarSeleccion() {
+        if (Object.keys(productosSeleccionados).length === 0) {
+          cerrarResumen();
+          return;
+        }
+
+        if (
+          confirm(
+            "¿Estás seguro de eliminar todos los productos seleccionados?"
+          )
+        ) {
+          productosSeleccionados = {};
+          actualizarContadores();
+          cargarProductos();
+          showNotification("Selección limpiada", "info");
         }
       }
 
